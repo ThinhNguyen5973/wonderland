@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WONDERLAND</title>
+<style>
+  :root { --ink:#241a10; --paper:#f2e9d8; --line:#b9a77f; --red:#8f1f1f; --dim:#6b5a3f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'IM Fell English', Georgia, serif; font-size: 19px; line-height: 1.45; }
+  #wrap { max-width: 1400px; margin: 0 auto; padding: 20px 24px 60px; }
+  h1 { font-weight: normal; letter-spacing: .18em; font-size: 26px; margin: 0; }
+  #msg { font-size: 17px; color: var(--red); font-style: italic; min-height: 26px; margin-bottom: 8px; }
+  #world { display: block; margin: 0 auto; border: 1px solid var(--line);
+    max-width: 100%; cursor: crosshair; background: var(--paper); }
+  #hud { display: flex; gap: 22px; font-size: 16px; color: var(--dim);
+    margin: 10px auto 0; justify-content: center; flex-wrap: wrap; letter-spacing: .04em; }
+  #inspect { font-size: 15px; color: var(--dim); font-style: italic;
+    text-align: center; min-height: 22px; margin-top: 6px; }
+  #tools { display: flex; gap: 10px; justify-content: center; margin: 10px auto 0; flex-wrap: wrap; }
+  .tool { border: 1px solid var(--line); padding: 3px 12px; cursor: pointer;
+    color: var(--dim); font-size: 15px; user-select: none; }
+  .tool.sel { color: var(--red); border-color: var(--red); }
+  #card { display: none; max-width: 560px; margin: 14px auto 0; padding: 12px 18px;
+    border: 1px solid var(--line); background: #f7efe0; font-size: 16px; }
+  #show { display: block; margin: 0 auto 6px; background: #f7efe0; }
+  #card .cname { color: var(--red); font-size: 19px; letter-spacing: .06em; }
+  #card .cfoot { font-style: italic; color: var(--dim); margin-top: 8px;
+    border-top: 1px dashed var(--line); padding-top: 6px; font-size: 13.5px; }
+  .panel { display: none; position: fixed; top: 16px; max-height: 88vh; overflow-y: auto;
+    padding: 14px 18px; background: #f7efe0; border: 1px solid var(--line);
+    font-size: 15px; z-index: 30; }
+  #hist { left: 16px; width: 440px; }
+  #book { left: 16px; bottom: 16px; top: auto; width: 480px; max-height: 78vh; }
+  #lab { right: 16px; width: 430px; }
+  #primer { left: 50%; transform: translateX(-50%); width: 520px; z-index: 35; }
+  .panel h2 { font-weight: normal; letter-spacing: .12em; font-size: 18px;
+    color: var(--red); margin: 0 0 8px; }
+  .hline { margin: 3px 0; font-size: 14px; }
+  .hline b { color: var(--dim); font-weight: normal; }
+  .page { border-top: 3px double var(--red); margin-top: 10px; padding-top: 8px; }
+  .page .pname { color: var(--red); font-size: 17px; }
+  .page .pno { color: var(--dim); font-size: 12px; float: right; }
+  .page canvas { display: block; margin: 4px 0; }
+  .page .pfoot { font-style: italic; color: var(--dim); font-size: 13px; margin-top: 4px; }
+  .krow { display: flex; gap: 10px; margin: 4px 0; align-items: baseline; }
+  .krow b { color: var(--red); min-width: 74px; font-weight: normal; }
+  .psec { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 8px; }
+  #kneelTip { display: none; position: fixed; z-index: 45; pointer-events: none;
+    background: #f7efe0; border: 1px solid var(--red); padding: 4px 10px; font-size: 13px; }
+  .labrow { display: flex; align-items: center; gap: 4px; margin: 6px 0; }
+  .labrow span.lablbl { width: 52px; font-size: 13px; color: var(--dim); }
+  .labrow canvas { width: 52px; height: 52px; border: 1px solid var(--line);
+    background: #fff; cursor: pointer; image-rendering: pixelated; }
+  .labrow canvas.sel { outline: 3px solid var(--red); }
+  .labctl { display: flex; gap: 8px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+  .labctl button, #lab select, #lab input { font-family: inherit; font-size: 14px;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); padding: 3px 10px; }
+  .labctl button { cursor: pointer; }
+  .labctl button:hover { border-color: var(--red); color: var(--red); }
+  #markov { display: none; position: fixed; inset: 0; z-index: 40; background: rgba(36,26,16,.35);
+    align-items: center; justify-content: center; }
+  #markov .mbox { background: #f7efe0; border: 1px solid var(--line); padding: 14px 18px; text-align: center; }
+  #markov canvas { display: block; margin: 8px auto; border: 1px solid var(--line); background: #f7efe0; }
+  #markov button { font-family: inherit; font-size: 15px; padding: 4px 14px; margin: 0 8px;
+    background: var(--paper); border: 1px solid var(--line); cursor: pointer; }
+  #markov button:hover { border-color: var(--red); color: var(--red); }
+  .fine { font-size: 13.5px; color: var(--dim); margin-top: 20px;
+    border-top: 1px solid var(--line); padding-top: 10px; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="wrap">
+  <h1>WONDERLAND</h1>
+  <div id="msg">the ground is waking.</div>
+  <canvas id="world"></canvas>
+  <div id="hud"><span id="clock"></span><span id="soilh"></span><span id="florah"></span><span id="beasth"></span><span id="bookh"></span><span id="engh"></span><span id="viewh"></span><span id="soundh">SOUND ON [M]</span></div>
+  <div id="inspect">hold to water · [1]–[4] tools · right-click to kneel · [K] every key</div>
+  <div id="tools">
+    <span class="tool sel" id="t-can">WATERING CAN [1]</span>
+    <span class="tool" id="t-seeds">SEED POUCH [2]</span>
+    <span class="tool" id="t-pen">THE PEN [3]</span>
+    <span class="tool" id="t-hands">HANDS [4]</span>
+	<a class="tool" href="cabinet.html" target="_blank" style="text-decoration:none">THE CABINET ↗</a>
+  </div>
+  <div id="card"><canvas id="show" width="250" height="250"></canvas><div id="cardText"></div></div>
+  <div class="fine">HOW TO PLAY — you are the gardener. Hold the left mouse to pour water; water brings dead soil to life. Plant seeds ([2]) on living soil — the garden decides what sprouts. Feed the creatures: mushrooms cause molts, eat-me cakes grow them, drink-me bottles shrink them. Kneel (right-click) to inspect the ground. Carry small things ([4]). SIGN ([3]) the creature you want to keep — a signed death becomes a page in the Book ([B]). When the season is done, press the paper ([P]) to fix it forever. you cannot save them. you can only sign them.</div>
+</div>
+<div id="hist" class="panel"><h2>THE CHRONICLE</h2><div id="histBody"></div></div>
+<div id="book" class="panel">
+  <h2>THE BOOK OF THE DEAD</h2>
+  <div id="bookBody"></div>
+  <div class="labctl" style="margin-top:10px"><button id="pressBtn">PRESS THE PAPER [P]</button></div>
+</div>
+<div id="lab" class="panel">
+  <h2>THE LAB — assemble a creature</h2>
+  <div class="labrow" id="labHeads"><span class="lablbl">HEADS</span></div>
+  <div class="labrow" id="labBodies"><span class="lablbl">BODY</span></div>
+  <div class="labrow" id="labLimbs"><span class="lablbl">LIMBS</span></div>
+  <div class="labctl">HEADS <button id="hMinus">−</button><b id="labHN">1</b><button id="hPlus">+</button>
+    &nbsp; LIMBS <button id="lMinus">−</button><b id="labLN">2</b><button id="lPlus">+</button></div>
+  <div class="labctl">NAME <input id="labName" maxlength="24"> <button id="labNameReroll">↻</button></div>
+  <div class="labctl">NATURE <select id="labPers"></select></div>
+  <div class="labctl"><button id="labDream">NEW DREAMS</button>
+    <button id="labReleaseC">RELEASE AT CURSOR</button>
+    <button id="labReleaseB">TO THE SEED BED</button></div>
+</div>
+<div id="primer" class="panel">
+  <h2>A PRIMER — ways to play</h2>
+  <div class="hline"><b style="color:var(--red)">THE GOAL</b> — you cannot save them. you can only sign them.</div>
+  <div class="hline">Everything here is temporary except what you mark. Choose what deserves a page.</div>
+  <div class="psec"><b style="color:var(--red)">THE TOOLS</b>
+    <div class="krow"><b>CAN [1]</b>Hold left mouse to pour. Water brings dead soil to life.</div>
+    <div class="krow"><b>SEEDS [2]</b>Click living soil — plants a small patch. The garden decides what sprouts.</div>
+    <div class="krow"><b>PEN [3]</b>Click a creature. Draw your sigil. The world does not pause.</div>
+    <div class="krow"><b>HANDS [4]</b>Click a small creature or egg to carry. Click again to set down.</div>
+  </div>
+  <div class="psec"><b style="color:var(--red)">A WAY TO PLAY</b>
+    <div class="hline">1. Pour water on dead ground until it lives. 2. Plant seeds on what lives. 3. Feed the creatures — mushrooms cause molts, cakes grow, bottles shrink, tea restores. 4. Sign the one you want to keep. 5. Carry the small to food, to places, to each other. 6. Press the paper when the season is done.</div>
+  </div>
+  <div class="psec"><b style="color:var(--red)">EVERY KEY</b>
+    <div class="krow"><b>1 / 2 / 3 / 4</b>select tool</div>
+    <div class="krow"><b>Left hold</b>pour water (can)</div>
+    <div class="krow"><b>Left click</b>tool action / open card (can)</div>
+    <div class="krow"><b>Right click</b>kneel — inspect one cell of ground</div>
+    <div class="krow"><b>A</b>atlas / garden view</div>
+    <div class="krow"><b>B</b>the book of the dead</div>
+    <div class="krow"><b>H</b>the chronicle</div>
+    <div class="krow"><b>L</b>the lab</div>
+    <div class="krow"><b>K</b>this primer</div>
+    <div class="krow"><b>M</b>sound on / off</div>
+    <div class="krow"><b>P</b>press the paper — export season poster</div>
+    <div class="krow"><b>ESC</b>close panels</div>
+  </div>
+  <div class="psec"><div class="hline" style="font-style:italic">no pause exists. no undo exists. the clock is not yours.</div></div>
+</div>
+<div id="kneelTip"></div>
+<div id="markov"><div class="mbox">
+  <div id="markTitle" style="color:var(--red)">THE PEN</div>
+  <div class="mhint" id="markHint" style="font-style:italic;color:var(--dim);font-size:14px;margin-bottom:8px"></div>
+  <canvas id="markInk" width="250" height="250"></canvas>
+  <button id="markOk">SIGN</button><button id="markNo">PUT THE PEN DOWN</button>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4/dist/tf.min.js"></script>
+<script>
+'use strict';
+
+/* ---------- session seed (LAW 6) ---------- */
+function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+const SEED = (Date.now() ^ (Math.random()*1e9)) >>> 0;
+const R = mulberry32(SEED);
+function hash2(x, y) { let h = x*374761393 + y*668265263 + SEED;
+  h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+function randnR(rng, n) { const a = new Float32Array(n);
+  for (let i = 0; i < n; i += 2) { const u = Math.max(rng(), 1e-9), v = rng();
+    const m = Math.sqrt(-2*Math.log(u)); a[i] = m*Math.cos(6.2831853*v);
+    if (i+1 < n) a[i+1] = m*Math.sin(6.2831853*v); } return a; }
+
+/* ---------- config ---------- */
+const W = 72, H = 48, ATLAS_CELL = 6;
+let CELL = 12;
+const LIFE_MS = 700, FLORA_MS = 1400, MOMENT_MS = 250, RAIN_EVERY = 12;
+const M_DECAY = .006, M_BIRTH = .15, FLORA_MAX = 1200, WILT = 60;
+const CAP = 50, BURST_CAP = 100, EGG_EVERY_MS = 800, EGG_HATCH = 16;
+const DRIFT = .35, REDREAM_MS = 1600, WATER_RATE = 1.4;
+const AGE_M = 360, MAX_AGE = 7200, POOL_SHRINK = 900;
+const HUNGER_RATE = .5, DECAY_M = 140, SIGHT = 44, SIGHT_GOURMAND = 70;
+const SIZE_SCALE = [.8, 1.3, 2.0, 3.1], SIZE_NAME = ['SMALL', 'MEDIUM', 'LARGE', 'HUGE'];
+const FLEE_RAD = [0, 0, 4, 7];
+const BIOMES = ['THE SEED BED', 'MUSHROOM MEADOW', 'TEA GARDEN', 'POOL OF TEARS',
+                'CROQUET GROUND', 'TULGEY WOOD'];
+const SHORT = ['THE BED','THE MEADOW','THE TEA','THE POOL','THE CROQUET','THE WOOD'];
+
+/* ---------- personalities ---------- */
+const PERS = {
+  WANDERLUST:{w:12, d:'it means to see every place before it ends.'},
+  OUTCAST:  {w:11, d:'it keeps its distance from everything.'},
+  GOURMAND: {w:11, d:'it is always hungry. it is always eating.'},
+  DORMOUSE: {w:11, d:'it sleeps often, and long, and well.'},
+  DREAMER:  {w:11, d:'its body forgets itself and becomes otherwise.'},
+  LOVER:    {w:15, d:'it seeks another of its kind. when they meet, they pair.'},
+  AGGRESSOR:{w:8,  d:'it charges. it strikes. it flees. sometimes it falls.'},
+  NURTURER: {w:8,  d:'flowers near it refuse to wilt.'},
+  ELDER:    {w:7,  d:'it ages at half the pace of the world.'},
+  LORD:     {w:4,  d:'the others drift toward it, as if it mattered.'},
+  CHESHIRE: {w:4,  d:'it vanishes, and is elsewhere.'},
+  PHOENIX:  {w:4,  d:'when it ends, an egg remains.'}
+};
+function rollPers(rng) {
+  let total = 0; for (const k in PERS) total += PERS[k].w;
+  let r = rng() * total;
+  for (const k in PERS) { r -= PERS[k].w; if (r <= 0) return k; }
+  return 'WANDERLUST';
+}
+
+/* ---------- world layers ---------- */
+const soil = new Uint8Array(W*H), moisture = new Float32Array(W*H), biome = new Uint8Array(W*H);
+const flora = [], creatures = [], eggs = [], corpses = [], puffs = [];
+let moment = 0, liveSoil = 0, lifeCount = 0, pairSeq = 0;
+const teaClock = { x: 0, y: 0 }, centers = [];
+for (let b = 0; b < 6; b++) centers.push({ x: 0, y: 0, n: 0 });
+const stats = { hatched:0, deaths:0, pages:0, planted:0, mush:0, cake:0, bottle:0, tea:0,
+                strikes:0, molts:0, pairs:0, eggs:0, kneels:0, carried:0 };
+(function buildMap(){
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const ddx = x - W/2 + .5 + (hash2(x, y) - .5) * 9;
+    const ddy = y - H/2 + .5 + (hash2(y, x) - .5) * 9;
+    const r = Math.hypot(ddx, ddy * 1.35);
+    let b;
+    if (r < 10) b = 0; else if (r > 33) b = 5;
+    else b = (ddx < 0 ? (ddy < 0 ? 1 : 3) : (ddy < 0 ? 2 : 4));
+    const i = y*W + x;
+    biome[i] = b;
+    moisture[i] = [ .85, .28, .32, 1.0, .22, .45 ][b];
+    if (b === 0 && R() < .38) soil[i] = 1;
+    centers[b].x += x; centers[b].y += y; centers[b].n++;
+  }
+  for (const c of centers) { c.x = c.x/c.n; c.y = c.y/c.n; }
+  teaClock.x = Math.round(centers[2].x); teaClock.y = Math.round(centers[2].y);
+})();
+
+/* ---------- the automaton ---------- */
+function lifeStep() {
+  const next = new Uint8Array(W*H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y*W + x, b = biome[i];
+    if (b === 2) { next[i] = soil[i]; continue; }
+    let n = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      n += soil[((y+dy+H)%H)*W + ((x+dx+W)%W)];
+    }
+    const alive = soil[i];
+    if (b === 3)      next[i] = (alive && n === 3) ? 1 : 0;
+    else if (b === 4) next[i] = (alive && (n === 2 || n === 3)) ||
+                       (!alive && n === 3 && y % 2 === 0 && moisture[i] > M_BIRTH) ? 1 : 0;
+    else if (b === 5) next[i] = (alive && (n === 2 || n === 3)) ||
+                       (!alive && (n === 2 || n === 3) && moisture[i] > .3) ? 1 : 0;
+    else              next[i] = (alive && (n === 2 || n === 3)) ||
+                       (!alive && n === 3 && moisture[i] > M_BIRTH) ? 1 : 0;
+  }
+  soil.set(next);
+}
+function moistureTick() {
+  for (let i = 0; i < W*H; i++) {
+    const b = biome[i];
+    if (b === 3) { moisture[i] = 1; continue; }
+    if (b === 2) continue;
+    moisture[i] -= M_DECAY * (b === 1 ? .5 : 1);
+    moisture[i] += .0008;
+    if (b === 1 && moisture[i] < .3) moisture[i] += .004;
+    if (b === 5 && moisture[i] < .4) moisture[i] += .002;
+    if (b === 0 && moisture[i] < .5) moisture[i] += .002;
+    if (moisture[i] < 0) moisture[i] = 0;
+    if (moisture[i] > 1) moisture[i] = 1;
+  }
+}
+function census() { liveSoil = 0; for (let i = 0; i < W*H; i++) liveSoil += soil[i]; }
+const msgEl = document.getElementById('msg');
+function say(t) { msgEl.textContent = t; }
+
+/* ---------- the chronicle ---------- */
+const events = [];
+let histOpen = false;
+function chron(t) {
+  say(t);
+  const day = (moment/1200|0) + 1;
+  events.push('D' + day + '·M' + moment.toLocaleString() + ' — ' + t);
+  if (events.length > 240) events.shift();
+  if (histOpen) renderHist();
+}
+function renderHist() {
+  document.getElementById('histBody').innerHTML =
+    events.slice(-80).map(e => '<div class="hline"><b>' +
+      e.split(' — ')[0] + '</b> — ' + e.split(' — ').slice(1).join(' — ') + '</div>')
+    .join('') || '<div class="hline">nothing has happened yet.</div>';
+}
+function toggleHist() {
+  histOpen = !histOpen;
+  document.getElementById('hist').style.display = histOpen ? 'block' : 'none';
+  if (histOpen) renderHist();
+}
+let rainUntil = 0;
+function shower() {                                  // the sky opens
+  const cx = Math.floor(R()*W), cy = Math.floor(R()*H);
+  for (let y = -14; y <= 14; y++) for (let x = -14; x <= 14; x++) {
+    const d = Math.hypot(x, y);
+    if (d > 14) continue;
+    const i = ((cy+y+H)%H)*W + ((cx+x+W)%W);
+    moisture[i] = Math.min(1, moisture[i] + .7*(1 - d/14));
+  }
+  rainUntil = performance.now() + 2800;
+  sndRain();
+  chron('a shower passes over ' + BIOMES[biome[cy*W+cx]].toLowerCase() + '.');
+}
+
+/* ---------- flora ---------- */
+const FLORA_TABLE = { 0:[['cake',.35],['bottle',.10],['mush',.15]],
+  1:[['mush',.45],['cake',.08],['bottle',.05]], 2:[['tea',.5],['mush',.08]], 3:[],
+  4:[['cake',.06],['bottle',.12],['mush',.06]], 5:[['mush',.30],['bottle',.10]] };
+const FLORA_NAME = { cake:'an eat-me cake', bottle:'a drink-me bottle', mush:'a mushroom', tea:'a cup of tea' };
+function spawnFlora(x, y, type) {
+  if (flora.length >= FLORA_MAX) return null;
+  const f = { x, y, type, age: 0, seed: Math.floor(R()*1e9),
+              tilt: (R()-.5)*.8, bornAt: performance.now() };
+  flora.push(f); return f;
+}
+function floraTick() {
+  const occ = new Set(flora.map(f => f.x*1000 + f.y));
+  for (let t = 0; t < 40; t++) {
+    const x = Math.floor(R()*W), y = Math.floor(R()*H), i = y*W + x;
+    if (!soil[i] || moisture[i] < .15 || occ.has(x*1000 + y)) continue;
+    const roll = R(); let acc = 0, type = null;
+    for (const [name, p] of FLORA_TABLE[biome[i]]) { acc += p; if (roll < acc) { type = name; break; } }
+    if (type) { spawnFlora(x, y, type); occ.add(x*1000 + y); }
+  }
+  for (let k = flora.length - 1; k >= 0; k--) {
+    const f = flora[k];
+    if (biome[f.y*W+f.x] === 2) continue;
+    if (++f.age > WILT) flora.splice(k, 1);
+  }
+  for (const c of creatures) {
+    if (c.dead || c.pers !== 'NURTURER') continue;
+    for (const f of flora)
+      if (Math.hypot(f.x - c.x, f.y - c.y) < 3.5) f.age = Math.max(0, f.age - 2);
+    if (Math.random() < .15) {
+      const x = Math.floor(c.x + (Math.random()-.5)*5), y = Math.floor(c.y + (Math.random()-.5)*5);
+      if (x > 0 && y > 0 && x < W && y < H && !occ.has(x*1000 + y)) {
+        if (spawnFlora(x, y, 'mush')) occ.add(x*1000 + y); }
+    }
+  }
+}
+
+/* ---------- puffs ---------- */
+function easeOutBack(t) { const c1 = 1.70158, c3 = c1 + 1;
+  return 1 + c3*Math.pow(t-1, 3) + c1*Math.pow(t-1, 2); }
+function spawnPuff(x, y, kind) {
+  puffs.push({ x: x + .5, y: y + .5, t0: performance.now(),
+               dur: kind === 'plant' ? 500 : kind === 'kneel' ? 650 : 350,
+               r: kind === 'plant' ? 11 : kind === 'kneel' ? 8 : 3, kind });
+  if (puffs.length > 40) puffs.shift();
+}
+const rainDrops = [];
+for (let k = 0; k < 60; k++)
+  rainDrops.push({ x: R(), sp: .45 + R()*.35, len: 8 + R()*14 });
+
+/* ---------- the dream engine ---------- */
+const PART_TYPES = ['heads', 'bodies', 'limbs'];
+const engines = { heads: null, bodies: null, limbs: null };
+const engHud = document.getElementById('engh');
+function dreamBatch(eng, zs) {
+  const out = tf.tidy(() => eng.model.predict(
+    tf.tensor2d(Array.from(zs, z => Array.from(z)), [zs.length, eng.LATENT])));
+  const s = out.shape, stride = s.length === 2 ? s[1] : s[1]*s[2], data = out.dataSync();
+  tf.dispose(out);
+  return Array.from({length: zs.length}, (_, i) => data.slice(i*stride, (i+1)*stride));
+}
+function tileToInk(f, eng) {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'), img = g.createImageData(64, 64);
+  for (let p = 0; p < f.length; p++) {
+    let vn = eng.mapV(f[p]); vn = Math.max(0, Math.min(1, vn));
+    img.data[p*4] = 36; img.data[p*4+1] = 26; img.data[p*4+2] = 18;
+    img.data[p*4+3] = Math.round((1 - vn) * 255);
+  }
+  g.putImageData(img, 0, 0); return c;
+}
+function photocopyPart(type, seed) {
+  const r = mulberry32(seed), c = document.createElement('canvas');
+  c.width = c.height = 64; const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, 64, 64);
+  g.strokeStyle = g.fillStyle = '#1a140c'; g.lineWidth = 2.4; g.lineCap = 'round';
+  if (type === 'bodies') {
+    const cx = 32 + (r()-.5)*6, cy = 34 + (r()-.5)*6, rx = 16 + r()*7, ry = 12 + r()*8, n = 10, pts = [];
+    for (let k = 0; k < n; k++) { const a = k/n*6.2832;
+      pts.push([cx + Math.cos(a)*rx*(.75+r()*.5), cy + Math.sin(a)*ry*(.75+r()*.5)]); }
+    g.beginPath(); g.moveTo((pts[0][0]+pts[n-1][0])/2, (pts[0][1]+pts[n-1][1])/2);
+    for (let k = 0; k < n; k++) { const p1 = pts[k], p2 = pts[(k+1)%n];
+      g.quadraticCurveTo(p1[0], p1[1], (p1[0]+p2[0])/2, (p1[1]+p2[1])/2); }
+    g.closePath(); g.stroke();
+    if (r() < .5) for (let k = 0; k < 3; k++) { g.beginPath();
+      g.arc(cx+(r()-.5)*rx, cy+(r()-.5)*ry, 1.6+r()*2.2, 0, 7); g.fill(); }
+    else { g.beginPath(); g.moveTo(cx-8, cy+6); g.quadraticCurveTo(cx, cy+ry, cx+8, cy+6); g.stroke(); }
+  } else if (type === 'heads') {
+    const cx = 32 + (r()-.5)*4, cy = 32 + (r()-.5)*4, rad = 13 + r()*7;
+    g.beginPath(); g.arc(cx, cy, rad, 0, 6.2832); g.stroke();
+    const eyes = r() < .8 ? 2 : 1;
+    for (let k = 0; k < eyes; k++) { g.beginPath();
+      g.arc(cx + (eyes === 2 ? (k ? 1 : -1)*rad*.38 : 0), cy - rad*.22, 1.8 + r()*1.4, 0, 7); g.fill(); }
+    g.beginPath(); g.moveTo(cx - rad*.45, cy + rad*.35);
+    g.quadraticCurveTo(cx + (r()-.5)*6, cy + rad*.75, cx + rad*.45, cy + rad*.3); g.stroke();
+    const v = r();
+    if (v < .35) { g.beginPath(); g.moveTo(cx-rad*.6, cy-rad*.9); g.lineTo(cx+rad*.6, cy-rad*.9); g.stroke();
+      g.beginPath(); g.moveTo(cx-rad*.32, cy-rad*.9); g.lineTo(cx-rad*.24, cy-rad*1.7);
+      g.lineTo(cx+rad*.3, cy-rad*1.6); g.closePath(); g.stroke(); }
+    else if (v < .65) { g.beginPath(); g.moveTo(cx-rad*.7, cy-rad*.7); g.lineTo(cx-rad*1.1, cy-rad*1.3); g.stroke();
+      g.beginPath(); g.moveTo(cx+rad*.7, cy-rad*.7); g.lineTo(cx+rad*1.1, cy-rad*1.3); g.stroke(); }
+    else { g.beginPath(); g.moveTo(cx-rad*.8, cy+rad*.15); g.lineTo(cx-rad*1.5, cy+rad*.05); g.stroke();
+      g.beginPath(); g.moveTo(cx+rad*.8, cy+rad*.15); g.lineTo(cx+rad*1.5, cy+rad*.05); g.stroke(); }
+  } else {
+    let x = 12 + r()*10, y = 10 + r()*8;
+    g.beginPath(); g.moveTo(x, y);
+    for (let k = 0; k < 3; k++) { const nx = x + (r()-.2)*22, ny = y + 12 + r()*12;
+      g.quadraticCurveTo(x + (r()-.5)*10, y + (r()-.5)*10, nx, ny); x = nx; y = ny; }
+    g.stroke();
+    g.beginPath(); g.arc(x, y, 3.2 + r()*2, 0, 7); g.fill();
+  }
+  return c;
+}
+async function loadEngines() {
+  let dreamed = 0;
+  for (const type of PART_TYPES) {
+    try {
+      const model = await tf.loadLayersModel('model/' + type + '/model.json');
+      const LATENT = model.inputs[0].shape[model.inputs[0].shape.length - 1] || 128;
+      const eng = { model, LATENT, mapV: v => v };
+      const probe = dreamBatch(eng, [randnR(mulberry32(SEED ^ type.length), LATENT)])[0];
+      let mn = Infinity, mx = -Infinity;
+      for (const v of probe) { if (v < mn) mn = v; if (v > mx) mx = v; }
+      eng.mapV = mn < -0.5 ? v => (v + 1) / 2 : v => v;
+      engines[type] = eng; dreamed++;
+    } catch (e) { /* the photocopier covers this rung */ }
+  }
+  engHud.textContent = 'ENGINE ' + dreamed + '/3 DREAMED' + (dreamed < 3 ? ' (REST PHOTOCOPIED)' : '');
+}
+function redreamPart(p) {
+  const eng = engines[p.type];
+  if (eng && p.z) { const fresh = randnR(R, eng.LATENT), z = new Float32Array(eng.LATENT);
+    for (let i = 0; i < eng.LATENT; i++) z[i] = p.z[i]*(1-DRIFT) + fresh[i]*DRIFT;
+    p.z = z; p.cv = tileToInk(dreamBatch(eng, [z])[0], eng);
+  } else { p.seed = (Math.imul(p.seed || 1, 1664525) + 1013904223) >>> 0;
+    p.cv = photocopyPart(p.type, p.seed); }
+}
+function makePartsBatched(nH, nL, rng) {
+  const mk = (type, n) => {
+    if (!n) return [];
+    const eng = engines[type];
+    if (!eng) { const arr = [];
+      for (let k = 0; k < n; k++) arr.push({ type, cv: photocopyPart(type, Math.floor(rng()*1e9)),
+        phase: rng()*6.2832, seed: Math.floor(rng()*1e9), z: null });
+      return arr; }
+    const zs = []; for (let k = 0; k < n; k++) zs.push(randnR(rng, eng.LATENT));
+    const ph = []; for (let k = 0; k < n; k++) ph.push(rng()*6.2832);
+    const tiles = dreamBatch(eng, zs);
+    return zs.map((z, i) => ({ type, z, cv: tileToInk(tiles[i], eng), phase: ph[i], seed: 0 }));
+  };
+  return { body: mk('bodies', 1)[0], heads: mk('heads', nH), limbs: mk('limbs', nL) };
+}
+
+/* ---------- THE VOICE — everything synthesized ---------- */
+let AC = null, sMaster = null, muted = false, noiseBuf = null, trickleGain = null;
+function initAudio() {
+  if (AC) return;
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  AC.resume();
+  sMaster = AC.createGain(); sMaster.gain.value = muted ? 0 : .6; sMaster.connect(AC.destination);
+  noiseBuf = AC.createBuffer(1, AC.sampleRate*2, AC.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random()*2 - 1;
+  const w = AC.createBufferSource(); w.buffer = noiseBuf; w.loop = true;
+  const wf = AC.createBiquadFilter(); wf.type = 'lowpass'; wf.frequency.value = 480;
+  const windGain = AC.createGain(); windGain.gain.value = .012;
+  w.connect(wf).connect(windGain).connect(sMaster); w.start();
+  const lfo = AC.createOscillator(); lfo.frequency.value = .07;
+  const lg = AC.createGain(); lg.gain.value = .006;
+  lfo.connect(lg).connect(windGain.gain); lfo.start();
+  const t = AC.createBufferSource(); t.buffer = noiseBuf; t.loop = true;
+  const tf = AC.createBiquadFilter(); tf.type = 'bandpass'; tf.frequency.value = 1400; tf.Q.value = .8;
+  trickleGain = AC.createGain(); trickleGain.gain.value = 0;
+  t.connect(tf).connect(trickleGain).connect(sMaster); t.start();
+  setInterval(ambientCall, 3800);
+}
+function tone(freq, t0, dur, vol, type) {
+  if (!AC || muted) return;
+  const o = AC.createOscillator(); o.type = type || 'sine'; o.frequency.value = freq;
+  const g = AC.createGain(); g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + .01);
+  g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+  o.connect(g).connect(sMaster); o.start(t0); o.stop(t0 + dur + .05);
+}
+function chirp(t0) {
+  if (!AC || muted) return;
+  const f0 = 2300 + Math.random()*900;
+  const o = AC.createOscillator();
+  o.frequency.setValueAtTime(f0, t0);
+  o.frequency.exponentialRampToValueAtTime(f0*1.3, t0 + .05);
+  o.frequency.exponentialRampToValueAtTime(f0*.9, t0 + .11);
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(.018, t0 + .015);
+  g.gain.exponentialRampToValueAtTime(.0001, t0 + .12);
+  o.connect(g).connect(sMaster); o.start(t0); o.stop(t0 + .15);
+}
+function ambientCall() {
+  if (!AC || muted) return;
+  const t = AC.currentTime, dayPhase = moment % 1200;
+  if (dayPhase < 950) {
+    if (Math.random() < .6) { const n = 2 + (Math.random()*2|0);
+      for (let k = 0; k < n; k++) chirp(t + k*.14 + Math.random()*.05); }
+  } else if (Math.random() < .5) {
+    for (let k = 0; k < 12; k++) tone(4200, t + k*.05, .035, .006);
+  }
+}
+function sndPluck() { if (!AC || muted) return; const t = AC.currentTime;
+  const o = AC.createOscillator(); o.frequency.setValueAtTime(210, t);
+  o.frequency.exponentialRampToValueAtTime(110, t + .1);
+  const g = AC.createGain(); g.gain.setValueAtTime(.11, t);
+  g.gain.exponentialRampToValueAtTime(.0001, t + .14);
+  o.connect(g).connect(sMaster); o.start(t); o.stop(t + .18); }
+function sndHatch(n) { if (!AC || muted) return; const t = AC.currentTime;
+  const base = 440 + n*50;
+  for (let k = 0; k < Math.min(4, n); k++)
+    tone(base * [1, 1.25, 1.5, 2][k], t + k*.09, .4, .05, 'triangle'); }
+function sndKnell() { if (!AC || muted) return; const t = AC.currentTime;
+  tone(130, t, 2.2, .16); tone(195, t, 1.6, .05); }
+function sndPair() { if (!AC || muted) return; const t = AC.currentTime;
+  tone(660, t, .5, .05, 'triangle'); tone(880, t + .12, .5, .05, 'triangle');
+  tone(660, t + .3, .7, .04, 'triangle'); tone(880, t + .3, .7, .04, 'triangle'); }
+function sndThud() { if (!AC || muted) return; const t = AC.currentTime;
+  const o = AC.createOscillator(); o.frequency.setValueAtTime(90, t);
+  o.frequency.exponentialRampToValueAtTime(48, t + .1);
+  const g = AC.createGain(); g.gain.setValueAtTime(.14, t);
+  g.gain.exponentialRampToValueAtTime(.0001, t + .15);
+  o.connect(g).connect(sMaster); o.start(t); o.stop(t + .2); }
+function sndShimmer() { if (!AC || muted) return; const t = AC.currentTime;
+  for (let k = 0; k < 5; k++) tone(1900 + Math.random()*1800, t + k*.045, .3, .025); }
+function sndPop() { if (!AC || muted) return; const t = AC.currentTime;
+  const o = AC.createOscillator(); o.frequency.setValueAtTime(520, t);
+  o.frequency.exponentialRampToValueAtTime(300, t + .07);
+  const g = AC.createGain(); g.gain.setValueAtTime(.09, t);
+  g.gain.exponentialRampToValueAtTime(.0001, t + .1);
+  o.connect(g).connect(sMaster); o.start(t); o.stop(t + .12); }
+function sndRain() { if (!AC || muted) return; const t = AC.currentTime;
+  const s = AC.createBufferSource(); s.buffer = noiseBuf;
+  const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 900;
+  const g = AC.createGain(); g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(.045, t + .4);
+  g.gain.linearRampToValueAtTime(0, t + 2.8);
+  s.connect(f).connect(g).connect(sMaster); s.start(t); s.stop(t + 3); }
+function sndFlutter() { if (!AC || muted) return; const t = AC.currentTime;
+  for (let k = 0; k < 22; k++) {
+    const s = AC.createBufferSource(); s.buffer = noiseBuf;
+    const f = AC.createBiquadFilter(); f.type = 'bandpass';
+    f.frequency.value = 3600 + Math.random()*1200; f.Q.value = 1;
+    const g = AC.createGain(); g.gain.setValueAtTime(.035, t + k*.032);
+    g.gain.exponentialRampToValueAtTime(.0001, t + k*.032 + .03);
+    s.connect(f).connect(g).connect(sMaster); s.start(t + k*.032); s.stop(t + k*.032 + .05); } }
+function sndKneel() { if (!AC || muted) return; const t = AC.currentTime;
+  tone(72, t, .2, .12); }
+function toggleMute() {
+  muted = !muted;
+  if (sMaster) sMaster.gain.value = muted ? 0 : .6;
+  document.getElementById('soundh').textContent = muted ? 'SOUND OFF [M]' : 'SOUND ON [M]';
+}
+window.addEventListener('pointerdown', initAudio);
+window.addEventListener('keydown', initAudio);
+
+/* ---------- names ---------- */
+const SYL = ['snorr','bri','tul','mim','gry','thra','vex','olo','quin','mor','pil','wug','fen','du','hatch','sop','tum','ble','wick','nar'];
+const ADJ = ['QUIET','PALE','LATE','SMALL','SOAKED','PATIENT','UNSURE','GENTLE'];
+const NOUN = ['GRIN','WAITER','DREAMER','AMBLER','LUMBER','GALLOP','HUM'];
+function makeName(rng, b) {
+  if (rng() < .7) { let n = '';
+    for (let k = 0, c = 2 + Math.floor(rng()*2); k < c; k++) n += SYL[Math.floor(rng()*SYL.length)];
+    return n.toUpperCase() + ' OF ' + SHORT[b || 0]; }
+  return 'THE ' + ADJ[Math.floor(rng()*ADJ.length)] + ' ' + NOUN[Math.floor(rng()*NOUN.length)];
+}
+
+/* ---------- birth ---------- */
+function spawnEgg(x, y, pers) {
+  if (creatures.length + eggs.length >= BURST_CAP) return;
+  x = Math.max(0, Math.min(W-1, x|0)); y = Math.max(0, Math.min(H-1, y|0));
+  eggs.push({ x, y, hatchAt: moment + EGG_HATCH + Math.floor(R()*16),
+              seed: Math.floor(R()*1e9), pers: pers || null });
+}
+function birthCreature(x, y, parts, name, pers) {
+  const b = biome[Math.min(H-1, y|0)*W + Math.min(W-1, x|0)];
+  const c = { id: creatures.length, name, x: x + .5, y: y + .5,
+    dir: R()*6.2832, sizeIdx: 0, birthBiome: b, pers,
+    body: parts.body, heads: parts.heads, limbs: parts.limbs, partsDreamed: 0,
+    eaten: { cake:0, bottle:0, mush:0, tea:0 }, places: [b],
+    hunger: 40 + R()*30, energy: 80, target: null, restUntil: 0, dreamPressure: 0,
+    poolTime: 0, birthMoment: moment, seed: Math.floor(R()*1e9), dead: false, cause: null,
+    goal: null, pairId: 0, pairedWith: null, pairEggAt: 0, fleeUntil: 0, coolUntil: 0,
+    teleAt: 0, redreamAt: 0, wanderDone: false, mark: null };
+  creatures.push(c);
+  return c;
+}
+function hatchEgg(e) {
+  const rng = mulberry32(e.seed ^ (SEED*31 + eggs.length));
+  const b = biome[Math.min(H-1, e.y|0)*W + Math.min(W-1, e.x|0)];
+  let nHeads = 1 + (rng() < .18 ? 1 : 0) + (b === 1 && rng() < .6 ? 1 : 0);
+  if (nHeads > 3) nHeads = 3;
+  let nLimbs = Math.floor(rng()*4) + (b === 2 && rng() < .6 ? 1 : 0) + (rng() < .25 ? 1 : 0);
+  if (nLimbs > 6) nLimbs = 6;
+  const parts = makePartsBatched(nHeads, nLimbs, rng);
+  const c = birthCreature(e.x, e.y, parts, makeName(rng, b), e.pers || rollPers(rng));
+  stats.hatched++;
+  spawnPuff(e.x, e.y, 'plant');
+  sndHatch(nHeads + 1);
+  chron(c.name + ' (' + c.pers.toLowerCase() + ') was born in ' + BIOMES[b].toLowerCase() + '.');
+}
+function eggSpawner() {
+  const pop = creatures.length + eggs.length;
+  if (pop >= CAP) return;
+  const occ = new Set(flora.map(f => f.x*1000 + f.y));
+  const n = pop < 12 ? 3 : pop < 30 ? 2 : 1;
+  for (let e = 0; e < n; e++)
+    for (let t = 0; t < 60; t++) {
+      const x = Math.floor(R()*W), y = Math.floor(R()*H), i = y*W + x;
+      if (soil[i] && moisture[i] > .25 && !occ.has(x*1000 + y)) {
+        spawnEgg(x, y); break; }
+    }
+}
+function nearestFlora(c, range) {
+  let best = null, bd = range || SIGHT;
+  for (const f of flora) { const d = Math.hypot(f.x - c.x, f.y - c.y);
+    if (d < bd) { bd = d; best = f; } }
+  return best;
+}
+function nearestCreature(c, range) {
+  let best = null, bd = range;
+  for (const o of creatures) { if (o === c || o.dead) continue;
+    const d = Math.hypot(o.x - c.x, o.y - c.y);
+    if (d < bd) { bd = d; best = o; } }
+  return best;
+}
+
+/* ---------- THE BOOK OF THE DEAD ---------- */
+const BOOK_KEY = 'wonderland-book-v1';
+let book = [];
+try { book = JSON.parse(localStorage.getItem(BOOK_KEY)) || []; } catch (e) { book = []; }
+let bookOpen = false;
+const bookHud = document.getElementById('bookh');
+function updateBookHud() { bookHud.textContent = 'BOOK ' + book.length + ' [B]'; }
+function saveBook() { try { localStorage.setItem(BOOK_KEY, JSON.stringify(book)); } catch (e) {} }
+function clip(s, n) { return s && s.length > n ? s.slice(0, n) + '…' : s; }
+function writePage(c) {
+  const eat = Object.entries(c.eaten).filter(([, n]) => n > 0)
+    .map(([t, n]) => n + ' ' + (FLORA_NAME[t] + (n > 1 ? 's' : '')).replace('an ','').replace('a ','')).join(', ');
+  book.unshift({ n: c.name, p: c.pers, bb: BIOMES[c.birthBiome],
+    age: moment - c.birthMoment, cause: DEATH_SAGA[c.cause] || c.cause,
+    size: SIZE_NAME[c.sizeIdx], heads: c.heads.length, limbs: c.limbs.length,
+    pd: c.partsDreamed, places: c.places.map(p => SHORT[p]).join(', '),
+    eaten: eat, mark: c.mark, paired: c.pairedWith ? c.pairedWith.name : null,
+    day: (moment/1200|0) + 1, pgno: book.length + 1 });
+  if (book.length > 200) book.length = 200;
+  stats.pages++;
+  saveBook(); updateBookHud();
+  if (bookOpen) renderBook();
+}
+function drawSigil(g, mark, cx, cy, sc) {
+  g.strokeStyle = 'rgba(143,31,31,.9)'; g.lineWidth = 1.8; g.lineCap = g.lineJoin = 'round';
+  for (const path of mark.paths) { g.beginPath();
+    path.forEach((pt, i) => { const x = cx + pt.x*sc, y = cy + pt.y*sc;
+      i ? g.lineTo(x, y) : g.moveTo(x, y); });
+    g.stroke(); }
+}
+function renderBook() {
+  const body = document.getElementById('bookBody');
+  if (!book.length) { body.innerHTML = '<div class="hline">the book is empty. nothing has been marked.</div>'; return; }
+  body.innerHTML = '';
+  for (const pg of book.slice(0, 40)) {
+    const div = document.createElement('div'); div.className = 'page';
+    div.innerHTML = '<span class="pno">PAGE ' + pg.pgno + '</span>' +
+      '<span class="pname">' + pg.n + '</span>' +
+      ' — ' + (pg.p ? pg.p.toLowerCase() : '') + '<br>' +
+      'born ' + pg.bb.toLowerCase() + ' · died day ' + pg.day + ', aged ' + pg.age.toLocaleString() +
+      ' moments · ' + pg.cause + '<br>' +
+      'size at death: ' + pg.size + ' · heads ' + pg.heads + ' · limbs ' + pg.limbs +
+      ' · parts dreamed: ' + pg.pd + '<br>' +
+      'places: ' + clip(pg.places, 64) + '<br>' +
+      'things eaten: ' + (pg.eaten || 'nothing') + (pg.paired ? '<br>paired with ' + pg.paired : '') +
+      '<div class="pfoot">the form collected everything and comprehended nothing.' +
+      (pg.mark ? ' the mark is the only field it cannot fill.' : '') + '</div>';
+    if (pg.mark) {
+      const mc = document.createElement('canvas'); mc.width = mc.height = 90;
+      drawSigil(mc.getContext('2d'), pg.mark, 45, 45, 32);
+      div.insertBefore(mc, div.firstChild);
+    }
+    body.appendChild(div);
+  }
+}
+function toggleBook() {
+  bookOpen = !bookOpen;
+  document.getElementById('book').style.display = bookOpen ? 'block' : 'none';
+  if (bookOpen) renderBook();
+}
+
+/* ---------- death & the strata ---------- */
+const TERRAIN_BY_SIZE = ['a flower now', 'a smudge on the paper', 'a mound',
+                         'a mountain — the map keeps its name'];
+const DEATH_SAGA = { 'starves':'starved', 'dies of age':'grew old',
+                     'is sentenced by the queen':'was sentenced by the queen',
+                     'dissolves in the tears':'dissolved in the tears',
+                     'drinks a drink-me bottle and vanishes':'drank a drink-me bottle and vanished',
+                     'falls in its own charge':'fell in its own charge',
+                     'died in your hands':'died in your hands' };
+function bakeCorpse(c) {
+  const g = strataCtx, x = c.x*CELL, y = c.y*CELL;
+  const r = mulberry32((c.seed ^ moment) >>> 0);
+  g.fillStyle = 'rgba(36,26,16,.5)';
+  if (c.sizeIdx === 0) {
+    for (let k = 0; k < 5; k++) { const a = k/5*Math.PI*2 + r();
+      g.beginPath(); g.arc(x + Math.cos(a)*4, y + Math.sin(a)*4, 2.4, 0, 7); g.fill(); }
+  } else if (c.sizeIdx === 1) {
+    for (let k = 0; k < 3; k++) { g.beginPath();
+      g.arc(x + (r()-.5)*8, y + (r()-.5)*8, 3 + r()*3, 0, 7); g.fill(); }
+  } else if (c.sizeIdx === 2) {
+    g.beginPath(); g.ellipse(x, y, 10, 6, 0, 0, 7); g.fill();
+    g.strokeStyle = 'rgba(36,26,16,.5)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(x-16, y+7); g.lineTo(x+16, y+7); g.stroke();
+  } else {
+    g.beginPath(); g.moveTo(x-22, y+14); g.lineTo(x-4, y-18); g.lineTo(x+8, y-4);
+    g.lineTo(x+14, y-10); g.lineTo(x+24, y+14); g.closePath(); g.fill();
+    g.font = '9px IM Fell English, serif';
+    const nm = c.name.split(' OF ')[0];
+    g.fillStyle = 'rgba(36,26,16,.65)';
+    g.fillText(nm, x - g.measureText(nm).width/2, y + 24);
+  }
+}
+function die(c, cause) {
+  if (c.dead) return;
+  c.dead = true; c.cause = cause;
+  stats.deaths++;
+  bakeCorpse(c);
+  sndKnell();
+  corpses.push({ x: c.x, y: c.y, sizeIdx: c.sizeIdx, pers: c.pers, seed: c.seed,
+    body: c.body, heads: c.heads, limbs: c.limbs, mark: c.mark,
+    born: moment, bornMs: performance.now() });
+  const age = moment - c.birthMoment;
+  let msg = c.name + ', ' + age.toLocaleString() + ' moments old, ' +
+            (DEATH_SAGA[cause] || cause) + '. ' + TERRAIN_BY_SIZE[c.sizeIdx] + '.';
+  if (c.pers === 'PHOENIX') {
+    spawnEgg(c.x, c.y, Math.random() < .25 ? 'PHOENIX' : null);
+    stats.eggs++;
+    msg += ' an egg remains.'; }
+  if (c.pairedWith && !c.pairedWith.dead) {
+    c.pairedWith.pairId = 0; c.pairedWith.pairedWith = null;
+    msg += ' ' + c.pairedWith.name + ' mourns.'; }
+  chron(msg);
+  if (c.mark) {
+    writePage(c);
+    chron(c.name + "'s page was written in the book.");
+    let heir = null;
+    if (c.pairedWith && !c.pairedWith.dead && !c.pairedWith.mark) heir = c.pairedWith;
+    else {
+      let bd = 5;
+      for (const o of creatures) { if (o === c || o.dead || o.mark) continue;
+        const d = Math.hypot(o.x - c.x, o.y - c.y);
+        if (d < bd) { bd = d; heir = o; } }
+    }
+    if (heir) { heir.mark = c.mark;
+      chron(c.name + "'s mark passed to " + heir.name + '.'); }
+  }
+  if (held.thing === c) { held.thing = null; held.kind = null; }
+  if (cardOpen === c) closeCard();
+}
+
+/* ---------- steering helpers ---------- */
+function angDelta(a, b) { let d = (b - a) % 6.2831853;
+  if (d > 3.1415926) d -= 6.2831853; if (d < -3.1415926) d += 6.2831853; return d; }
+function steerFromEdges(c, dt) {
+  const m = 7;
+  if (c.x < m || c.x > W-m-1 || c.y < m || c.y > H-m-1) {
+    const toC = Math.atan2(H/2 - c.y, W/2 - c.x);
+    c.dir += angDelta(c.dir, toC) * Math.min(1, 3*dt);
+  }
+}
+
+/* ---------- update loop ---------- */
+function updateCreatures(dt, now) {
+  for (const c of creatures) {
+    if (c.dead) continue;
+    if (held.thing === c) {
+      if (mouseCell) { c.x = Math.min(W-2, Math.max(1, mouseCell.x + .5));
+                       c.y = Math.min(H-2, Math.max(1, mouseCell.y + .5)); }
+      const b = biome[Math.min(H-1, c.y|0)*W + Math.min(W-1, c.x|0)];
+      if (!c.places.includes(b)) c.places.push(b);
+      c.hunger += HUNGER_RATE * dt;
+      if (c.hunger >= 100) { die(c, 'died in your hands'); }
+      continue; }
+    const ageF = c.pers === 'ELDER' ? .5 : 1;
+    const age = (moment - c.birthMoment) * ageF;
+    const b = biome[Math.min(H-1, c.y|0)*W + Math.min(W-1, c.x|0)];
+    if (!c.places.includes(b)) c.places.push(b);
+    if (c.sizeIdx === 0 && age >= AGE_M) { c.sizeIdx = 1; chron(c.name + ' grows.'); }
+    if (age >= MAX_AGE) { die(c, 'dies of age'); continue; }
+    if (c.hunger >= 100) { die(c, 'starves'); continue; }
+    if (c.sizeIdx === 3 && b === 4) { die(c, 'is sentenced by the queen'); continue; }
+    if (b === 3) { if (++c.poolTime > POOL_SHRINK) {
+      c.poolTime = 0;
+      if (c.sizeIdx > 0) { c.sizeIdx--; chron(c.name + ' shrinks in the tears.'); }
+      else { die(c, 'dissolves in the tears'); continue; } } }
+    c.hunger += HUNGER_RATE * (c.pers === 'GOURMAND' ? 1.6 : 1) * dt;
+    const oldSlow = age > MAX_AGE * .75 ? .7 : 1;
+    const desperate = c.hunger > 85 ? 1.4 : 1;
+    let speed = (c.sizeIdx === 0 ? 1.9 : c.sizeIdx === 1 ? 1.5 : c.sizeIdx === 2 ? 1.2 : .9)
+                * (b === 3 ? .45 : b === 5 ? .65 : 1)
+                * (c.pers === 'LORD' ? .8 : c.pers === 'DORMOUSE' ? .85 : 1)
+                * oldSlow * desperate;
+    if (moment < c.fleeUntil) {
+      c.x += Math.cos(c.dir)*speed*1.3*dt; c.y += Math.sin(c.dir)*speed*1.3*dt;
+      steerFromEdges(c, dt); c.energy -= 2.2*dt;
+      c.x = Math.max(1, Math.min(W-2, c.x)); c.y = Math.max(1, Math.min(H-2, c.y));
+      continue; }
+    const restAt = c.pers === 'DORMOUSE' ? 45 : c.pers === 'WANDERLUST' ? 8 : 20;
+    const restLen = c.pers === 'DORMOUSE' ? 80 : 24;
+    if (moment < c.restUntil) { c.energy = Math.min(100, c.energy + (c.pers === 'DORMOUSE' ? 8 : 6)*dt); continue; }
+    if (c.energy < restAt) { c.restUntil = moment + restLen; continue; }
+    let steered = false;
+    if (c.hunger < 75) {
+      if (c.pers === 'CHESHIRE' && moment >= c.teleAt) {
+        c.teleAt = moment + 200 + Math.floor(Math.random()*300);
+        c.x = Math.max(1, Math.min(W-2, c.x + (Math.random()-.5)*9));
+        c.y = Math.max(1, Math.min(H-2, c.y + (Math.random()-.5)*7));
+        if (Math.random() < .5) chron(c.name + ' vanished, and is elsewhere.'); }
+      if (c.pers === 'DREAMER' && moment >= c.redreamAt) {
+        c.redreamAt = moment + 20 + Math.floor(Math.random()*10);
+        const all = [c.body, ...c.heads, ...c.limbs];
+        redreamPart(all[Math.floor(Math.random()*all.length)]); c.partsDreamed++; }
+      if (c.pers === 'WANDERLUST' && !c.goal && !c.wanderDone) {
+        const un = [0,1,2,3,4,5].filter(bb => !c.places.includes(bb));
+        if (un.length) { const bb = un[Math.floor(Math.random()*un.length)];
+          c.goal = { x: centers[bb].x, y: centers[bb].y, b: bb }; }
+        else if (!c.wanderDone) { c.wanderDone = true; chron(c.name + ' has seen every place.'); } }
+      if (c.pers === 'DORMOUSE' && !c.goal && Math.random() < .004)
+        c.goal = { x: centers[2].x, y: centers[2].y, b: 2 };
+      if (c.goal) {
+        const d = Math.hypot(c.goal.x - c.x, c.goal.y - c.y);
+        if (b === c.goal.b || d < 2) c.goal = null;
+        else { c.dir = Math.atan2(c.goal.y - c.y, c.goal.x - c.x);
+          c.x += Math.cos(c.dir)*speed*.8*dt; c.y += Math.sin(c.dir)*speed*.8*dt; steered = true; } }
+      if (c.pers === 'LOVER') {
+        if (!c.pairId) {
+          let mate = null, bd = 60;
+          for (const o of creatures)
+            if (o !== c && !o.dead && o.pers === 'LOVER' && !o.pairId) {
+              const d = Math.hypot(o.x - c.x, o.y - c.y);
+              if (d < bd) { bd = d; mate = o; } }
+          if (mate) {
+            if (bd < 1.2) { c.pairId = mate.pairId = ++pairSeq;
+              c.pairedWith = mate; mate.pairedWith = c;
+              c.pairEggAt = moment + 600;
+              stats.pairs++;
+              sndPair();
+              chron(c.name + ' and ' + mate.name + ' paired.'); }
+            else { c.dir = Math.atan2(mate.y - c.y, mate.x - c.x);
+              c.x += Math.cos(c.dir)*speed*.9*dt; c.y += Math.sin(c.dir)*speed*.9*dt; steered = true; } }
+        } else {
+          const p = c.pairedWith;
+          if (!p || p.dead) { c.pairId = 0; c.pairedWith = null; chron(c.name + ' mourns.'); }
+          else {
+            const d = Math.hypot(p.x - c.x, p.y - c.y);
+            if (d > 3) { c.dir = Math.atan2(p.y - c.y, p.x - c.x);
+              c.x += Math.cos(c.dir)*speed*.8*dt; c.y += Math.sin(c.dir)*speed*.8*dt; steered = true; }
+            if (c.id < p.id && moment >= c.pairEggAt) {
+              spawnEgg((c.x + p.x)/2, (c.y + p.y)/2);
+              stats.eggs++;
+              sndPop();
+              c.pairEggAt = moment + 500 + Math.floor(Math.random()*600);
+              chron('an egg appeared beside a pair.'); } } } }
+      if (c.pers === 'AGGRESSOR' && moment >= c.coolUntil) {
+        const vic = nearestCreature(c, 9);
+        if (vic) {
+          const d = Math.hypot(vic.x - c.x, vic.y - c.y);
+          if (d < 1.1) {
+            vic.energy = Math.max(0, vic.energy - 25);
+            vic.hunger = Math.min(100, vic.hunger + 15);
+            const ang = Math.atan2(vic.y - c.y, vic.x - c.x);
+            vic.x = Math.max(1, Math.min(W-2, vic.x + Math.cos(ang)*1.6));
+            vic.y = Math.max(1, Math.min(H-2, vic.y + Math.sin(ang)*1.6));
+            vic.dir = ang; vic.fleeUntil = moment + 50;
+            c.coolUntil = moment + 220; c.fleeUntil = moment + 30;
+            c.dir = ang + Math.PI + (Math.random()-.5);
+            stats.strikes++;
+            sndThud();
+            spawnPuff(vic.x, vic.y, 'kneel');
+            chron(c.name + ' struck ' + vic.name + '.');
+            if (Math.random() < .08) { die(c, 'falls in its own charge'); continue; }
+          } else {
+            c.dir = Math.atan2(vic.y - c.y, vic.x - c.x);
+            c.x += Math.cos(c.dir)*speed*1.3*dt; c.y += Math.sin(c.dir)*speed*1.3*dt;
+            c.energy -= 4*dt; steered = true; } } }
+    }
+    if (c.hunger > 50 && !c.target)
+      c.target = nearestFlora(c, c.pers === 'GOURMAND' ? SIGHT_GOURMAND : SIGHT);
+    if (c.target) {
+      if (flora.indexOf(c.target) < 0) c.target = null;
+      else {
+        const dx = c.target.x - c.x, dy = c.target.y - c.y, d = Math.hypot(dx, dy);
+        if (d < .8) {
+          const t = c.target.type;
+          flora.splice(flora.indexOf(c.target), 1);
+          c.eaten[t]++; stats[t]++; c.hunger = Math.max(5, c.hunger - (c.pers === 'GOURMAND' ? 75 : 60));
+          if (t === 'mush') { c.dreamPressure++;
+            if (c.dreamPressure >= 3) { c.dreamPressure = 0;
+              const all = [c.body, ...c.heads, ...c.limbs];
+              redreamPart(all[Math.floor(Math.random()*all.length)]); c.partsDreamed++;
+              stats.molts++;
+              sndShimmer();
+              chron(c.name + ' molted — a part re-dreamed.'); } }
+          if (t === 'tea') c.energy = Math.min(100, c.energy + 40);
+          if (t === 'cake') { const grow = c.pers === 'GOURMAND' ? 2 : 1;
+            if (c.sizeIdx < 3) { c.sizeIdx = Math.min(3, c.sizeIdx + grow);
+              chron(c.name + ' ate an eat-me cake. it grew.'); } }
+          if (t === 'bottle') { if (c.sizeIdx > 0) { c.sizeIdx--;
+              chron(c.name + ' drank a drink-me bottle. it shrank.'); }
+            else { die(c, 'drinks a drink-me bottle and vanishes'); continue; } }
+          c.target = null;
+        } else if (!steered) {
+          c.dir = Math.atan2(dy, dx); c.x += dx/d*speed*dt; c.y += dy/d*speed*dt; }
+      }
+    } else if (!steered) {
+      c.dir += (Math.random() - .5) * 2.6 * dt;
+      c.x += Math.cos(c.dir)*speed*.6*dt; c.y += Math.sin(c.dir)*speed*.6*dt;
+    }
+    steerFromEdges(c, dt);
+    c.energy -= (b === 2 ? .4 : 2.2) * dt;
+    c.x = Math.max(1, Math.min(W-2, c.x)); c.y = Math.max(1, Math.min(H-2, c.y));
+    if (c.sizeIdx === 3) {
+      for (let k = flora.length - 1; k >= 0; k--) {
+        const f = flora[k];
+        if (Math.hypot(f.x - c.x, f.y - c.y) < 1.2) flora.splice(k, 1);
+      }
+    }
+  }
+  for (let i = 0; i < creatures.length; i++) for (let j = i+1; j < creatures.length; j++) {
+    const a = creatures[i], b2 = creatures[j];
+    if (a.dead || b2.dead || held.thing === a || held.thing === b2) continue;
+    const dx = b2.x - a.x, dy = b2.y - a.y, d = Math.hypot(dx, dy);
+    const sepR = (a.pers === 'OUTCAST' || b2.pers === 'OUTCAST') ? 2.8 : .9;
+    if (d > 0 && d < sepR) { const push = .8*dt/d;
+      a.x -= dx*push; a.y -= dy*push; b2.x += dx*push; b2.y += dy*push; }
+    const big = a.sizeIdx >= b2.sizeIdx ? a : b2, small = big === a ? b2 : a;
+    if (small.sizeIdx < big.sizeIdx && FLEE_RAD[big.sizeIdx] > 0 && d < FLEE_RAD[big.sizeIdx]) {
+      const flee = (FLEE_RAD[big.sizeIdx] - d) * 3.5 * dt / Math.max(d, .1);
+      small.x -= (big.x - small.x) * flee; small.y -= (big.y - small.y) * flee;
+      small.dir = Math.atan2(small.y - big.y, small.x - big.x); }
+    if (a.pers === 'LORD' && !b2.dead && b2.pers !== 'OUTCAST' && d < 7 && d > 1) {
+      b2.x += (a.x - b2.x) * .25 * dt; b2.y += (a.y - b2.y) * .25 * dt;
+      b2.energy = Math.min(100, b2.energy + 2*dt); }
+    if (b2.pers === 'LORD' && !a.dead && a.pers !== 'OUTCAST' && d < 7 && d > 1) {
+      a.x += (b2.x - a.x) * .25 * dt; a.y += (b2.y - a.y) * .25 * dt;
+      a.energy = Math.min(100, a.energy + 2*dt); }
+  }
+  for (let k = creatures.length - 1; k >= 0; k--) if (creatures[k].dead) creatures.splice(k, 1);
+  for (let k = corpses.length - 1; k >= 0; k--)
+    if (moment - corpses[k].born > DECAY_M) corpses.splice(k, 1);
+}
+setInterval(() => {
+  const alive = creatures.filter(c => !c.dead);
+  const n = Math.min(3, 1 + (alive.length/40|0));
+  for (let k = 0; k < n && k < alive.length; k++) {
+    const c = alive[Math.floor(Math.random()*alive.length)];
+    const all = [c.body, ...c.heads, ...c.limbs];
+    redreamPart(all[Math.floor(Math.random()*all.length)]);
+    c.partsDreamed++;
+  }
+}, REDREAM_MS);
+
+/* ---------- rendering (performance-fixed) ---------- */
+const cv = document.getElementById('world'), ctx = cv.getContext('2d');
+const INK = '#241a10', PAPER = '#f2e9d8';
+let view = 'garden';
+const tint = document.createElement('canvas'), strata = document.createElement('canvas');
+const TINTS = ['rgba(255,250,225,.35)','rgba(120,150,60,.12)','rgba(150,110,50,.14)',
+               'rgba(80,115,165,.16)','rgba(170,70,50,.09)','rgba(85,95,75,.12)'];
+let strataCtx;
+const hudClock = document.getElementById('clock'), hudSoil = document.getElementById('soilh'),
+      hudFlora = document.getElementById('florah'), hudBeast = document.getElementById('beasth'),
+      hudView = document.getElementById('viewh');
+function computeCell() {
+  CELL = Math.max(12, Math.min(20,
+    Math.floor(Math.min((innerWidth - 48)/W, (innerHeight - 220)/H))));
+}
+function paintTints() {
+  const t = tint.getContext('2d');
+  t.fillStyle = PAPER; t.fillRect(0, 0, W*CELL, H*CELL);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    t.fillStyle = TINTS[biome[y*W+x]];
+    t.fillRect(x*CELL-.5, y*CELL-.5, CELL+1, CELL+1);
+  }
+  t.strokeStyle = 'rgba(36,26,16,.5)'; t.lineWidth = 1;
+  for (let k = 0; k < 14; k++) { const x = R()*W*CELL, y = R()*H*CELL;
+    t.beginPath(); t.moveTo(x, y); t.lineTo(x+2, y-6); t.stroke(); }
+  t.beginPath(); t.arc(teaClock.x*CELL, teaClock.y*CELL, 9, 0, 7);
+  t.moveTo(teaClock.x*CELL, teaClock.y*CELL); t.lineTo(teaClock.x*CELL, teaClock.y*CELL+6); t.stroke();
+  t.font = '10px IM Fell English, serif'; t.fillStyle = 'rgba(36,26,16,.55)';
+  t.fillText('VI', teaClock.x*CELL+12, teaClock.y*CELL+3);
+}
+function resizeWorld() {
+  const snap = document.createElement('canvas');
+  snap.width = tint.width; snap.height = tint.height;
+  snap.getContext('2d').drawImage(strata, 0, 0);
+  computeCell();
+  tint.width = strata.width = W*CELL; tint.height = strata.height = H*CELL;
+  paintTints();
+  strataCtx = strata.getContext('2d');
+  strataCtx.drawImage(snap, 0, 0, W*CELL, H*CELL);
+}
+function drawFlora(c, f, cx, cy, s, now) {
+  const fade = Math.min(1, 2.2 - f.age/WILT);
+  const pop = f.bornAt ? Math.max(0, easeOutBack(Math.min(1, (now - f.bornAt)/600))) : 1;
+  c.strokeStyle = c.fillStyle = 'rgba(36,26,16,' + (.85*fade) + ')';
+  c.lineWidth = Math.max(1, s*.08);
+  const px = cx + s/2, py = cy + s/2;
+  c.save(); c.translate(px, py); c.rotate(f.tilt); c.scale(pop, pop);
+  if (f.type === 'mush') { c.beginPath(); c.arc(0, 1, s*.3, Math.PI, 0); c.stroke();
+    c.beginPath(); c.moveTo(0, 1); c.lineTo(0, s*.38); c.stroke(); }
+  else if (f.type === 'cake') { c.strokeRect(-s*.28, -s*.1, s*.56, s*.32);
+    c.beginPath(); c.arc(0, -s*.18, s*.07, 0, 7); c.fill(); }
+  else if (f.type === 'bottle') { c.strokeRect(-s*.14, -s*.05, s*.28, s*.4);
+    c.beginPath(); c.moveTo(0, -s*.05); c.lineTo(0, -s*.3); c.stroke(); }
+  else if (f.type === 'tea') { c.beginPath(); c.arc(0, 0, s*.24, 0, Math.PI); c.stroke();
+    c.beginPath(); c.arc(s*.3, 0, s*.12, -1.2, 1.2); c.stroke(); }
+  c.restore();
+}
+function drawPart(g, p, x, y, size, now, wob, opts) {
+  const o = opts || {}, t = now/1000;
+  const sway = Math.sin(t*(o.pivotTop ? 5 : 3) + p.phase + (o.extraPhase || 0)) * wob;
+  const bob = Math.sin(t*2.4 + p.phase) * size * .06;
+  g.save();
+  if (o.pivotTop) { g.translate(x, y); g.rotate(sway + (o.tilt || 0));
+    g.drawImage(p.cv, -size/2, 0, size, size); }
+  else { g.translate(x, y + bob); g.rotate(sway + (o.tilt || 0));
+    g.drawImage(p.cv, -size/2, -size/2, size, size); }
+  g.restore();
+}
+function drawCreature(g, c, s, now, center) {
+  const px = center ? center.x : c.x*s, py = center ? center.y : c.y*s;
+  const sz = SIZE_SCALE[c.sizeIdx] * s * 2.1;
+  if (c.pers === 'CHESHIRE') g.globalAlpha = .35 + .65*Math.abs(Math.sin(now/650 + c.seed));
+  if (c.sizeIdx >= 2) {
+    g.fillStyle = 'rgba(36,26,16,' + (c.sizeIdx === 3 ? .09 : .05) + ')';
+    g.beginPath(); g.ellipse(px, py + sz*.4, sz*.55, sz*.18, 0, 0, 7); g.fill();
+  }
+  const nL = c.limbs.length;
+  c.limbs.forEach((p, k) => {
+    const lx = px + (nL > 1 ? (k/(nL-1) - .5) * sz * .8 : 0);
+    drawPart(g, p, lx, py + sz*.28, sz*.62, now, .38, { pivotTop: true, extraPhase: k * 2.4 });
+  });
+  drawPart(g, c.body, px, py, sz, now, .06);
+  const nH = c.heads.length;
+  c.heads.forEach((p, k) => {
+    const hx = px + (nH > 1 ? (k - (nH-1)/2) * sz * .5 : 0);
+    drawPart(g, p, hx, py - sz*.62, sz*.55, now, .3, { tilt: (k - (nH-1)/2) * .15 });
+  });
+  if (c.mark) {
+    g.strokeStyle = 'rgba(143,31,31,.9)';
+    g.lineWidth = Math.max(1.5, sz*.045); g.lineCap = g.lineJoin = 'round';
+    for (const path of c.mark.paths) { g.beginPath();
+      path.forEach((pt, i) => { const x = px + pt.x*sz, y = py + pt.y*sz;
+        i ? g.lineTo(x, y) : g.moveTo(x, y); });
+      g.stroke(); }
+  }
+  g.globalAlpha = 1;
+}
+const fronds = [];
+for (let k = 0; k < 150; k++) { const x = Math.floor(R()*W), y = Math.floor(R()*H);
+  if (biome[y*W+x] === 5) fronds.push({ x, y, ang: R()*7, len: 5 + R()*9 }); }
+let lastNow = 0, lastDropT = 0;
+const showCtx = document.getElementById('show').getContext('2d');
+function render(now) {
+  const dt = Math.min(.1, (now - lastNow)/1000 || 0); lastNow = now;
+  updateCreatures(dt, now);
+  /* trickle: direct value lerp — NO setTargetAtTime (the lag bug, fixed) */
+  if (AC && trickleGain) {
+    const want = (tool === 'can' && watering && !muted) ? .02 : 0;
+    trickleGain.gain.value += (want - trickleGain.gain.value) * .12;
+  }
+  if (tool === 'can' && watering && mouseCell && mouseCell.x >= 0 && mouseCell.y >= 0 &&
+      mouseCell.x < W && mouseCell.y < H) {
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+      const d = Math.hypot(dx, dy); if (d > 3) continue;
+      const i = Math.min(H-1, Math.max(0, mouseCell.y+dy))*W + Math.min(W-1, Math.max(0, mouseCell.x+dx));
+      moisture[i] = Math.min(1, moisture[i] + WATER_RATE*(1 - d/3)*dt);
+      if (moisture[i] > .55) soil[i] = 1;          /* water brings soil to life */
+    }
+    if (now - lastDropT > 160) { lastDropT = now;
+      spawnPuff(mouseCell.x + (Math.random()-.5)*1.2, mouseCell.y + (Math.random()-.5)*1.2, 'drop'); }
+  }
+  const s = view === 'garden' ? CELL : ATLAS_CELL;
+  if (cv.width !== W*s || cv.height !== H*s) {     /* resize only when needed (the second lag bug, fixed) */
+    cv.width = W*s; cv.height = H*s;
+  }
+  ctx.drawImage(tint, 0, 0, W*s, H*s);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y*W + x;
+    if (moisture[i] > .25) { ctx.fillStyle = 'rgba(70,90,120,.07)'; ctx.fillRect(x*s, y*s, s, s); }
+    if (soil[i]) { ctx.fillStyle = 'rgba(36,26,16,.62)'; ctx.fillRect(x*s + s*.3, y*s + s*.3, s*.4, s*.4); }
+  }
+  ctx.drawImage(strata, 0, 0, W*s, H*s);
+  for (const cp of corpses) {
+    const a = 1 - (moment - cp.born)/DECAY_M;
+    ctx.globalAlpha = Math.max(0, a) * .85;
+    drawCreature(ctx, cp, s, cp.bornMs);
+    ctx.globalAlpha = 1;
+  }
+  for (const f of flora) view === 'garden'
+    ? drawFlora(ctx, f, f.x*s, f.y*s, s, now)
+    : (ctx.fillStyle = 'rgba(36,26,16,.8)', ctx.fillRect(f.x*s+s*.35, f.y*s+s*.35, s*.3, s*.3));
+  for (const e of eggs) {
+    const px = e.x*s + s/2, py = e.y*s + s/2;
+    const left = Math.max(0, e.hatchAt - moment);
+    const pulse = 1 + Math.sin(now/300)*(.4 + .6*left/(EGG_HATCH+16));
+    ctx.strokeStyle = 'rgba(36,26,16,.8)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.ellipse(px, py, s*.3*pulse, s*.42*pulse, .3, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(px-1, py+1, .8, 0, 7); ctx.fill();
+  }
+  const sorted = creatures.slice().sort((a, b) => a.y - b.y);
+  for (const c of sorted) view === 'garden'
+    ? drawCreature(ctx, c, s, now)
+    : (ctx.fillStyle = 'rgba(36,26,16,.9)', ctx.fillRect(c.x*s-1, c.y*s-1, 3, 3));
+  for (const fr of fronds) {
+    const sway = Math.sin(now/1400 + fr.ang)*.25;
+    ctx.strokeStyle = 'rgba(60,70,55,.5)'; ctx.lineWidth = Math.max(1, s*.07);
+    ctx.beginPath(); ctx.moveTo(fr.x*s + s/2, fr.y*s + s/2);
+    ctx.lineTo(fr.x*s + s/2 + Math.cos(fr.ang + sway)*fr.len*(s/12),
+               fr.y*s + s/2 + Math.sin(fr.ang + sway)*fr.len*(s/12));
+    ctx.stroke();
+  }
+  for (let k = puffs.length - 1; k >= 0; k--) {
+    const p = puffs[k], t = (now - p.t0)/p.dur;
+    if (t >= 1) { puffs.splice(k, 1); continue; }
+    const e = easeOutBack(Math.min(1, t));
+    const a = .55*(1 - t);
+    if (p.kind === 'drop') {
+      ctx.fillStyle = 'rgba(70,90,120,' + a + ')';
+      ctx.beginPath(); ctx.arc(p.x*s, p.y*s - e*6, 1.2, 0, 7); ctx.fill();
+    } else {
+      ctx.strokeStyle = (p.kind === 'kneel' ? 'rgba(36,26,16,' : 'rgba(143,31,31,') + a + ')';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(p.x*s, p.y*s, 2 + e*p.r, 0, 7); ctx.stroke();
+      for (let sp = 0; sp < 6; sp++) { const ang = sp/6*Math.PI*2 + (p.x*p.y);
+        ctx.fillStyle = 'rgba(36,26,16,' + a + ')';
+        ctx.beginPath();
+        ctx.arc(p.x*s + Math.cos(ang)*e*p.r, p.y*s + Math.sin(ang)*e*p.r, .8, 0, 7); ctx.fill(); }
+    }
+  }
+  if (now < rainUntil) {                            /* the rain, made visible */
+    ctx.strokeStyle = 'rgba(70,90,120,.35)'; ctx.lineWidth = 1;
+    for (const rd of rainDrops) {
+      const rx = (rd.x + now/1000*rd.sp*.08) % 1 * W*s;
+      const ry = ((now/1000*rd.sp*.9 + rd.x*7) % 1) * H*s;
+      ctx.beginPath(); ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 2, ry + rd.len*(s/12));
+      ctx.stroke();
+    }
+  }
+  ctx.fillStyle = 'rgba(242,233,216,.35)';
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+    if (biome[y*W+x] === 5) ctx.fillRect(x*s, y*s, s, s);
+  const dayT = (moment % 1200)/1200;
+  const night = (1 - Math.cos(dayT*Math.PI*2))/2;
+  if (night > .05) { ctx.fillStyle = 'rgba(70,90,130,' + (night*.05).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W*s, H*s); }
+  if (cardOpen && !cardOpen.dead) {
+    showCtx.clearRect(0, 0, 250, 250);
+    showCtx.strokeStyle = 'rgba(36,26,16,.3)'; showCtx.lineWidth = 1;
+    showCtx.beginPath(); showCtx.moveTo(30, 200); showCtx.lineTo(220, 200); showCtx.stroke();
+    const sc = [40, 34, 28, 24][cardOpen.sizeIdx];
+    drawCreature(showCtx, cardOpen, sc, now, { x: 125, y: 145 });
+  }
+  const day = (moment/1200|0) + 1;
+  hudClock.textContent = 'THE FIRST SEASON · DAY ' + day + ' · MOMENT ' + moment.toLocaleString();
+  hudSoil.textContent = 'LIVING SOIL ' + liveSoil;
+  hudFlora.textContent = 'FLORA ' + flora.length;
+  hudBeast.textContent = 'CREATURES ' + creatures.length + (creatures.length > CAP ? ' (BURST)' : ' / ' + CAP) +
+    ' · EGGS ' + eggs.length;
+  hudView.textContent = 'VIEW ' + (view === 'garden' ? 'GARDEN [A]' : 'ATLAS [A]');
+  requestAnimationFrame(render);
+}
+
+/* ---------- the specimen card ---------- */
+const cardEl = document.getElementById('card'), cardTextEl = document.getElementById('cardText');
+let cardOpen = null;
+function refreshCard() {
+  if (!cardOpen || cardOpen.dead) return;
+  const c = cardOpen;
+  const eat = Object.entries(c.eaten).filter(([, n]) => n > 0)
+    .map(([t, n]) => n + ' ' + FLORA_NAME[t] + (n > 1 ? 's' : '')).join(', ');
+  const age = moment - c.birthMoment;
+  cardTextEl.innerHTML = '<div class="cname">SUBJECT: ' + c.name +
+    (c.mark ? ' <span style="color:var(--red)">· MARKED</span>' : '') + '</div>' +
+    'NATURE: ' + c.pers + ' — ' + PERS[c.pers].d + '<br>' +
+    'BIRTHPLACE: ' + BIOMES[c.birthBiome] + ' · SIZE: ' + SIZE_NAME[c.sizeIdx] +
+    ' (S: PREY · M: ORDINARY · L: OBSTACLE · G: WEATHER)<br>' +
+    'HEADS: ' + c.heads.length + ' · LIMBS: ' + c.limbs.length +
+    ' · PARTS DREAMED: ' + c.partsDreamed +
+    (c.pairedWith ? ' · <span style="color:var(--red)">PAIRED WITH ' + c.pairedWith.name + '</span>' : '') + '<br>' +
+    'PLACES VISITED: ' + c.places.map(p => SHORT[p]).join(', ') + '<br>' +
+    'THINGS EATEN: ' + (eat || 'nothing yet') + '<br>' +
+    'AGE: ' + age.toLocaleString() + ' MOMENTS' + (c.pers === 'ELDER' ? ' (AGES AT HALF PACE)' : '') +
+    ' · HUNGER: ' + Math.round(c.hunger) + ' · ENERGY: ' + Math.round(c.energy) +
+    '<div class="cfoot">the form collected everything and comprehended nothing.' +
+    (c.mark ? ' the mark is the only field it cannot fill.' : '') + '</div>';
+}
+function openCard(c) { cardOpen = c; cardEl.style.display = 'block'; refreshCard(); }
+function closeCard() { cardOpen = null; cardEl.style.display = 'none'; }
+setInterval(refreshCard, 600);
+
+/* ---------- the tools ---------- */
+let tool = 'can';
+const held = { thing: null, kind: null };
+function setTool(t) {
+  if (t !== 'hands' && held.thing) dropHeld();
+  tool = t;
+  for (const k of ['can', 'seeds', 'pen', 'hands'])
+    document.getElementById('t-' + k).classList.toggle('sel', tool === k);
+}
+for (const k of ['can', 'seeds', 'pen', 'hands'])
+  document.getElementById('t-' + k).onclick = () => setTool(k);
+function dropHeld() {
+  if (!held.thing) return;
+  say('you set it down.');
+  held.thing = null; held.kind = null;
+}
+function pickUp(hit) {
+  if (held.thing) { dropHeld(); return; }
+  if (hit.egg) {
+    held.kind = 'egg'; held.thing = hit.egg;
+    say('you lift the egg. it keeps its own schedule.');
+  } else if (hit.creature) {
+    if (hit.creature.sizeIdx === 0) {
+      held.kind = 'creature'; held.thing = hit.creature;
+      stats.carried++;
+      say('you lift ' + hit.creature.name + '. it does not stop being hungry.');
+    } else say('your hands are only big enough for the small.');
+  }
+}
+function plantAt(cell) {                             /* planting: a patch at a time */
+  if (cell.x < 0 || cell.y < 0 || cell.x >= W || cell.y >= H) return;
+  const b = biome[cell.y*W + cell.x];
+  const roll = R(); let acc = 0, type = null;
+  for (const [name, p] of FLORA_TABLE[b]) { acc += p; if (roll < acc) { type = name; break; } }
+  if (!type) type = 'mush';
+  let planted = 0;
+  const offsets = [[0,0],[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
+  for (const [ox, oy] of offsets) {
+    const x = cell.x + ox, y = cell.y + oy;
+    if (x < 0 || y < 0 || x >= W || y >= H) continue;
+    const i = y*W + x;
+    if (!soil[i] || flora.some(f => f.x === x && f.y === y)) continue;
+    if (planted >= 4) break;
+    spawnFlora(x, y, type);
+    stats.planted++;
+    planted++;
+  }
+  if (planted) {
+    sndPluck();
+    spawnPuff(cell.x, cell.y, 'plant');
+    chron('you planted ' + FLORA_NAME[type] + 's in ' + BIOMES[b].toLowerCase() +
+      ' (' + planted + (planted > 1 ? ' seeds' : ' seed') + ').');
+  } else say('the soil is still. the seed waits.');
+}
+
+/* ---------- THE PEN ---------- */
+const markovEl = document.getElementById('markov');
+const mkInk = document.getElementById('markInk'), mkCtx = mkInk.getContext('2d');
+let markTarget = null, markPaths = [], markDrawing = false, markCur = null;
+function openMark(c) {
+  if (c.mark) { say(c.name + ' is already signed.'); return; }
+  markTarget = c; markPaths = [];
+  mkCtx.clearRect(0, 0, 250, 250);
+  const sc = [40, 34, 28, 24][c.sizeIdx];
+  drawCreature(mkCtx, c, sc, performance.now(), { x: 125, y: 145 });
+  document.getElementById('markTitle').textContent = 'THE PEN — ' + c.name;
+  document.getElementById('markHint').textContent =
+    'draw your sigil upon it — the world does not pause while you draw.';
+  markovEl.style.display = 'flex';
+}
+function closeMark() { markovEl.style.display = 'none'; markTarget = null; markDrawing = false; }
+mkInk.addEventListener('mousedown', ev => {
+  if (!markTarget) return;
+  markDrawing = true; markCur = [];
+  const r = mkInk.getBoundingClientRect();
+  markCur.push({ x: (ev.clientX - r.left) * 250/r.width, y: (ev.clientY - r.top) * 250/r.height });
+  markPaths.push(markCur);
+});
+mkInk.addEventListener('mousemove', ev => {
+  if (!markDrawing) return;
+  const r = mkInk.getBoundingClientRect();
+  const p = { x: (ev.clientX - r.left) * 250/r.width, y: (ev.clientY - r.top) * 250/r.height };
+  const last = markCur[markCur.length-1];
+  if (Math.hypot(p.x - last.x, p.y - last.y) > 4 && markCur.length < 300) {
+    markCur.push(p);
+    mkCtx.strokeStyle = 'rgba(143,31,31,.95)'; mkCtx.lineWidth = 2.6;
+    mkCtx.lineCap = 'round'; mkCtx.lineJoin = 'round';
+    mkCtx.beginPath(); mkCtx.moveTo(last.x, last.y); mkCtx.lineTo(p.x, p.y); mkCtx.stroke();
+  }
+});
+window.addEventListener('mouseup', () => { markDrawing = false; markCur = null; });
+document.getElementById('markOk').onclick = () => {
+  if (!markTarget) { closeMark(); return; }
+  if (markTarget.dead) { say('it died while you held the pen.'); closeMark(); return; }
+  if (!markPaths.length) { say('an unsigned pen does not remember anything.'); return; }
+  markTarget.mark = { paths: markPaths };
+  chron('you signed ' + markTarget.name + '.');
+  closeMark();
+};
+document.getElementById('markNo').onclick = () => { say('you put the pen down.'); closeMark(); };
+
+/* ---------- kneel ---------- */
+const kneelTip = document.getElementById('kneelTip');
+let kneelTimer = null;
+function kneel(cell, cx, cy) {
+  if (cell.x < 0 || cell.y < 0 || cell.x >= W || cell.y >= H) return;
+  stats.kneels++;
+  sndKneel();
+  spawnPuff(cell.x, cell.y, 'kneel');
+  const i = cell.y*W + cell.x;
+  const f = flora.find(fl => fl.x === cell.x && fl.y === cell.y);
+  kneelTip.textContent = BIOMES[biome[i]] + ' · soil ' + (soil[i] ? 'LIVING' : 'still') +
+    ' · moisture ' + Math.round(moisture[i]*100) + '%' +
+    (f ? ' · ' + FLORA_NAME[f.type] + (f.age > 0 ? ' (age ' + f.age + ')' : '') : '');
+  kneelTip.style.display = 'block';
+  kneelTip.style.left = Math.min(innerWidth - 220, cx + 14) + 'px';
+  kneelTip.style.top = (cy + 14) + 'px';
+  clearTimeout(kneelTimer);
+  kneelTimer = setTimeout(() => { kneelTip.style.display = 'none'; }, 2600);
+}
+
+/* ---------- THE PAPER — now ends with a page about you ---------- */
+async function pressPaper() {
+  say('you press the paper. the season is fixed.');
+  sndFlutter();
+  try { await document.fonts.load('28px "IM Fell English"'); } catch (e) {}
+  const pw = 860, m = 56;
+  const shown = Math.min(book.length, 20);
+  const cols = 2, pageH = 128;
+  const pc = document.createElement('canvas');
+  pc.width = pw;
+  pc.height = 320 + 340 + Math.ceil(shown/cols)*pageH + 170 + 160;
+  const g = pc.getContext('2d');
+  g.fillStyle = '#f2e9d8'; g.fillRect(0, 0, pc.width, pc.height);
+  g.fillStyle = '#241a10';
+  g.font = '34px "IM Fell English", Georgia, serif';
+  g.fillText('WONDERLAND', m, 64);
+  g.font = '18px "IM Fell English", Georgia, serif'; g.fillStyle = '#6b5a3f';
+  g.fillText('a season\u2019s paper \u00b7 day ' + ((moment/1200|0)+1) +
+    ' \u00b7 moment ' + moment.toLocaleString() + ' \u00b7 world ' + SEED.toString(16), m, 90);
+  g.strokeStyle = '#8f1f1f'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(m, 106); g.lineTo(pw - m, 106); g.stroke();
+  g.fillStyle = '#8f1f1f'; g.font = '22px "IM Fell English", Georgia, serif';
+  g.fillText('THE CENSUS', m, 138);
+  g.fillStyle = '#241a10'; g.font = '16px "IM Fell English", Georgia, serif';
+  const cen = [
+    ['creatures born', stats.hatched], ['creatures died', stats.deaths],
+    ['pages written', stats.pages], ['flora planted by the gardener', stats.planted],
+    ['mushrooms eaten', stats.mush], ['eat-me cakes eaten', stats.cake],
+    ['drink-me bottles drunk', stats.bottle], ['cups of tea taken', stats.tea],
+    ['strikes', stats.strikes], ['molts', stats.molts],
+    ['pairs formed', stats.pairs], ['eggs laid in love or fire', stats.eggs],
+    ['times the gardener knelt', stats.kneels], ['small things carried', stats.carried]];
+  for (let k = 0; k < cen.length; k++) {
+    const cx2 = m + (k % 2)*(pw - 2*m)/2, cy2 = 162 + Math.floor(k/2)*24;
+    g.fillText(cen[k][0], cx2, cy2);
+    g.fillText(String(cen[k][1]), cx2 + (pw - 2*m)/2 - 70, cy2);
+  }
+  let yNow = 162 + Math.ceil(cen.length/2)*24 + 26;
+  g.fillStyle = '#8f1f1f'; g.font = '22px "IM Fell English", Georgia, serif';
+  g.fillText('THE BOOK OF THE DEAD', m, yNow);
+  g.fillStyle = '#241a10'; g.font = '15px "IM Fell English", Georgia, serif';
+  if (!book.length)
+    g.fillText('nothing was marked. the season was witnessed by the gardener alone.', m, yNow + 26);
+  for (let k = 0; k < shown; k++) {
+    const pg = book[k];
+    const bx = m + (k % cols)*(pw - 2*m)/2, by = yNow + 18 + Math.floor(k/cols)*pageH;
+    if (pg.mark) drawSigil(g, pg.mark, bx + 26, by + 30, 20);
+    g.fillText(pg.n + (pg.p ? ' (' + pg.p.toLowerCase() + ')' : ''), bx + 62, by + 18);
+    g.fillText('born ' + pg.bb.toLowerCase() + ' \u00b7 died day ' + pg.day +
+      ' \u00b7 aged ' + pg.age.toLocaleString() + ' \u00b7 ' + pg.cause, bx + 62, by + 38);
+    g.fillText('places: ' + clip(pg.places, 40), bx + 62, by + 56);
+    g.fillText('ate: ' + clip(pg.eaten, 40), bx + 62, by + 74);
+    if (pg.paired) g.fillText('paired with ' + pg.paired, bx + 62, by + 92);
+  }
+  yNow += Math.ceil(shown/cols)*pageH + 30;
+  /* THE LOOKING GLASS: the gardener's own page */
+  g.strokeStyle = '#8f1f1f'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(m, yNow); g.lineTo(pw - m, yNow); g.stroke();
+  yNow += 34;
+  g.fillStyle = '#8f1f1f'; g.font = '20px "IM Fell English", Georgia, serif';
+  g.fillText('THE GARDENER', m, yNow);
+  g.fillStyle = '#241a10'; g.font = '15px "IM Fell English", Georgia, serif';
+  g.fillText('knelt ' + stats.kneels + ' times \u00b7 planted ' + stats.planted +
+    ' \u00b7 carried ' + stats.carried + ' small things \u00b7 witnessed ' + stats.strikes +
+    ' strikes', m, yNow + 24);
+  g.fillText('wrote ' + stats.pages + ' pages \u00b7 day ' + ((moment/1200|0)+1) +
+    ' \u00b7 cause: still here', m, yNow + 46);
+  g.fillStyle = '#6b5a3f'; g.font = 'italic 14px "IM Fell English", Georgia, serif';
+  g.fillText('the form collected everything and comprehended nothing.', m, yNow + 70);
+  const foot = pc.height - 90;
+  g.strokeStyle = '#8f1f1f'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(m, foot); g.lineTo(pw - m, foot); g.stroke();
+  g.fillStyle = '#8f1f1f'; g.font = '20px "IM Fell English", Georgia, serif';
+  g.fillText('you cannot save them. you can only sign them.', m, foot + 34);
+  g.fillStyle = '#6b5a3f'; g.font = '15px "IM Fell English", Georgia, serif';
+  g.fillText('the form collected everything and comprehended nothing.', m, foot + 58);
+  const a = document.createElement('a');
+  a.download = 'wonderland-season.png';
+  a.href = pc.toDataURL('image/png');
+  a.click();
+  spawnPuff(mouseCell ? mouseCell.x : W/2, mouseCell ? mouseCell.y : H/2, 'plant');
+}
+document.getElementById('pressBtn').onclick = pressPaper;
+
+/* ---------- input ---------- */
+function cellAt(ev) {
+  const rect = cv.getBoundingClientRect();
+  const sx = cv.width / rect.width, sy = cv.height / rect.height;
+  return { x: Math.floor((ev.clientX - rect.left) * sx / (view === 'garden' ? CELL : ATLAS_CELL)),
+           y: Math.floor((ev.clientY - rect.top) * sy / (view === 'garden' ? CELL : ATLAS_CELL)) };
+}
+let watering = false, mouseCell = null, downAt = 0, moved = 0;
+cv.addEventListener('mousedown', ev => {
+  if (ev.button !== 0) return;
+  downAt = performance.now(); moved = 0;
+  if (tool === 'can') { watering = true; say('you water the ground.'); }
+});
+window.addEventListener('mousemove', ev => {
+  if (watering) moved = Math.max(moved, Math.hypot(ev.movementX || 0, ev.movementY || 0));
+  mouseCell = cellAt(ev);
+  if (mouseCell.x < 0 || mouseCell.y < 0 || mouseCell.x >= W || mouseCell.y >= H) return;
+  const hit = creatures.find(cr => Math.hypot(cr.x - (mouseCell.x+.5), cr.y - (mouseCell.y+.5)) < 1.4);
+  if (hit && view === 'garden') { document.getElementById('inspect').textContent = hit.name +
+    ' · ' + hit.pers + ' · ' + SIZE_NAME[hit.sizeIdx] + (hit.mark ? ' · MARKED' : ''); return; }
+  const i = mouseCell.y*W + mouseCell.x, f = flora.find(fl => fl.x === mouseCell.x && fl.y === mouseCell.y);
+  document.getElementById('inspect').textContent =
+    BIOMES[biome[i]] + ' · soil ' + (soil[i] ? 'LIVING' : 'still') + ' · moisture ' +
+    Math.round(moisture[i]*100) + '%' + (f ? ' · ' + FLORA_NAME[f.type] : '');
+});
+window.addEventListener('mouseup', ev => {
+  watering = false;
+  if (!mouseCell || mouseCell.x < 0 || mouseCell.y < 0 || mouseCell.x >= W || mouseCell.y >= H) return;
+  const hit = creatures.find(cr => Math.hypot(cr.x - (mouseCell.x+.5), cr.y - (mouseCell.y+.5)) < 1.4);
+  const eggHit = eggs.find(e => Math.hypot(e.x - mouseCell.x, e.y - mouseCell.y) < 1.2);
+  if (tool === 'seeds') { plantAt(mouseCell); return; }
+  if (tool === 'pen') { if (hit) openMark(hit); return; }
+  if (tool === 'hands') {
+    if (held.thing) { dropHeld(); return; }
+    if (hit) { pickUp({ creature: hit }); return; }
+    if (eggHit) { pickUp({ egg: eggHit }); return; }
+    return;
+  }
+  if (tool === 'can') {
+    const quick = performance.now() - downAt < 300 && moved < 6;
+    if (!quick) return;
+    if (hit && view === 'garden') openCard(hit); else closeCard();
+  }
+});
+cv.addEventListener('contextmenu', ev => {
+  ev.preventDefault();
+  kneel(cellAt(ev), ev.clientX, ev.clientY);
+});
+window.addEventListener('keydown', ev => {
+  if (ev.key === '1') setTool('can');
+  if (ev.key === '2') setTool('seeds');
+  if (ev.key === '3') setTool('pen');
+  if (ev.key === '4') setTool('hands');
+  if (ev.key === 'a' || ev.key === 'A') view = view === 'garden' ? 'atlas' : 'garden';
+  if (ev.key === 'b' || ev.key === 'B') toggleBook();
+  if (ev.key === 'h' || ev.key === 'H') toggleHist();
+  if (ev.key === 'k' || ev.key === 'K') togglePrimer();
+  if (ev.key === 'l' || ev.key === 'L') toggleLab();
+  if (ev.key === 'm' || ev.key === 'M') toggleMute();
+  if (ev.key === 'p' || ev.key === 'P') pressPaper();
+  if (ev.key === 'Escape') {
+    if (markTarget) closeMark();
+    else { closeCard(); if (primerOpen) togglePrimer(); if (labOpen) toggleLab(false); }
+  }
+});
+window.addEventListener('resize', resizeWorld);
+
+/* ---------- the primer ---------- */
+let primerOpen = false;
+function togglePrimer() {
+  primerOpen = !primerOpen;
+  document.getElementById('primer').style.display = primerOpen ? 'block' : 'none';
+  if (!primerOpen) { try { localStorage.setItem('primer-seen', '1'); } catch (e) {} }
+}
+
+/* ---------- THE LAB ---------- */
+const labEl = document.getElementById('lab');
+const labPool = { heads: [], bodies: [], limbs: [] };
+const labSel = { heads: 0, bodies: 0, limbs: 0 };
+const labCounts = { heads: 1, limbs: 2 };
+let labOpen = false;
+function toggleLab(force) {
+  labOpen = force !== undefined ? force : !labOpen;
+  labEl.style.display = labOpen ? 'block' : 'none';
+}
+function buildLabRows() {
+  for (const type of PART_TYPES) {
+    const row = document.getElementById('lab' + type[0].toUpperCase() + type.slice(1));
+    for (let k = 0; k < 6; k++) {
+      const cvs = document.createElement('canvas'); cvs.width = cvs.height = 64;
+      cvs.dataset.k = k;
+      cvs.onclick = () => { labSel[type] = k; markLabSel(type); };
+      row.appendChild(cvs);
+    }
+  }
+}
+function markLabSel(type) {
+  const row = document.getElementById('lab' + type[0].toUpperCase() + type.slice(1));
+  Array.from(row.querySelectorAll('canvas')).forEach((cvs, k) =>
+    cvs.classList.toggle('sel', k === labSel[type]));
+}
+function labDream() {
+  for (const type of PART_TYPES) {
+    const eng = engines[type];
+    if (eng) {
+      const zs = []; for (let k = 0; k < 6; k++) zs.push(randnR(R, eng.LATENT));
+      const tiles = dreamBatch(eng, zs);
+      labPool[type] = zs.map((z, i) => ({ z, cv: tileToInk(tiles[i], eng) }));
+    } else {
+      labPool[type] = [];
+      for (let k = 0; k < 6; k++)
+        labPool[type].push({ z: null, cv: photocopyPart(type, Math.floor(R()*1e9)) });
+    }
+    const row = document.getElementById('lab' + type[0].toUpperCase() + type.slice(1));
+    Array.from(row.querySelectorAll('canvas')).forEach((cvs, k) => {
+      const g = cvs.getContext('2d');
+      g.clearRect(0, 0, 64, 64);
+      g.drawImage(labPool[type][k].cv, 0, 0);
+    });
+    markLabSel(type);
+  }
+}
+function labPart(type, idx) {
+  const src = labPool[type][idx];
+  return { type, z: src.z ? src.z.slice() : null, cv: src.cv,
+           phase: Math.random()*6.2832, seed: src.z ? 0 : Math.floor(Math.random()*1e9) };
+}
+function labRelease(seedBed) {
+  if (creatures.length + eggs.length >= BURST_CAP) { say('the garden cannot hold more just now.'); return; }
+  const at = seedBed ? { x: centers[0].x, y: centers[0].y }
+    : (mouseCell && mouseCell.x >= 0 && mouseCell.y >= 0 && mouseCell.x < W && mouseCell.y < H)
+      ? mouseCell : { x: centers[0].x, y: centers[0].y };
+  const parts = { body: labPart('bodies', labSel.bodies), heads: [], limbs: [] };
+  for (let k = 0; k < labCounts.heads; k++) parts.heads.push(labPart('heads', labSel.heads));
+  for (let k = 0; k < labCounts.limbs; k++) parts.limbs.push(labPart('limbs', labSel.limbs));
+  let nm = document.getElementById('labName').value.trim().toUpperCase();
+  if (!nm) nm = makeName(mulberry32(Math.floor(Math.random()*1e9)), 0);
+  const sel = document.getElementById('labPers');
+  const pers = sel.value === 'RANDOM' ? rollPers(R) : sel.value;
+  const c = birthCreature(at.x, at.y, parts, nm, pers);
+  spawnPuff(at.x, at.y, 'plant');
+  sndPop();
+  chron(c.name + ' (' + c.pers.toLowerCase() + ') entered the garden, by your hand.');
+}
+document.getElementById('labDream').onclick = labDream;
+document.getElementById('labReleaseC').onclick = () => labRelease(false);
+document.getElementById('labReleaseB').onclick = () => labRelease(true);
+document.getElementById('hMinus').onclick = () => { labCounts.heads = Math.max(1, labCounts.heads-1);
+  document.getElementById('labHN').textContent = labCounts.heads; };
+document.getElementById('hPlus').onclick = () => { labCounts.heads = Math.min(3, labCounts.heads+1);
+  document.getElementById('labHN').textContent = labCounts.heads; };
+document.getElementById('lMinus').onclick = () => { labCounts.limbs = Math.max(0, labCounts.limbs-1);
+  document.getElementById('labLN').textContent = labCounts.limbs; };
+document.getElementById('lPlus').onclick = () => { labCounts.limbs = Math.min(6, labCounts.limbs+1);
+  document.getElementById('labLN').textContent = labCounts.limbs; };
+document.getElementById('labNameReroll').onclick = () => {
+  document.getElementById('labName').value =
+    makeName(mulberry32(Math.floor(Math.random()*1e9)), 0); };
+(function fillPersSelect() {
+  const sel = document.getElementById('labPers');
+  sel.innerHTML = '<option value="RANDOM">LET THE GARDEN DECIDE</option>' +
+    Object.keys(PERS).map(k => '<option value="' + k + '">' + k + '</option>').join('');
+})();
+
+/* ---------- time: one direction only ---------- */
+setInterval(() => { moment++; moistureTick();
+  for (let k = eggs.length - 1; k >= 0; k--) if (moment >= eggs[k].hatchAt) {
+    const e = eggs.splice(k, 1)[0];
+    if (held.thing === e) { held.thing = null; held.kind = null; }
+    hatchEgg(e); }
+}, MOMENT_MS);
+setInterval(() => { lifeStep(); census(); if (++lifeCount % RAIN_EVERY === 0) shower(); }, LIFE_MS);
+setInterval(floraTick, FLORA_MS);
+setInterval(eggSpawner, EGG_EVERY_MS);
+census();
+updateBookHud();
+
+/* ---------- boot ---------- */
+(async function boot() {
+  computeCell();
+  tint.width = strata.width = W*CELL; tint.height = strata.height = H*CELL;
+  paintTints();
+  strataCtx = strata.getContext('2d');
+  await loadEngines();
+  buildLabRows();
+  for (let k = 0; k < 8; k++) eggSpawner();
+  labDream();
+  chron('a gardener arrived. world ' + SEED.toString(16) + '.');
+  let seen = false;
+  try { seen = !!localStorage.getItem('primer-seen'); } catch (e) {}
+  if (!seen) togglePrimer();
+  requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>

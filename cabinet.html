@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>THE PARTS CABINET</title>
+<style>
+  :root { --ink:#241a10; --paper:#efe6d0; --line:#b9a77f; --red:#8f1f1f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'IM Fell English', Georgia, serif; font-size: 19px; line-height: 1.5; }
+  #wrap { max-width: 900px; margin: 0 auto; padding: 30px 24px 70px; }
+  h1 { font-weight: normal; letter-spacing: .2em; font-size: 26px; margin: 0 0 2px; }
+  .sub { color: #6b5a3f; font-style: italic; margin-bottom: 28px; }
+  #boot { white-space: pre-wrap; margin-bottom: 20px; }
+  section.part { margin: 34px 0; border-top: 1px solid var(--line); padding-top: 8px; }
+  section.part h2 { font-weight: normal; letter-spacing: .3em; font-size: 17px;
+    margin: 6px 0 10px; display: flex; justify-content: space-between; }
+  .newbtn { cursor: pointer; color: var(--red); letter-spacing: .05em; user-select: none; }
+  .newbtn:hover { text-decoration: underline; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .row canvas { width: 128px; height: 128px; image-rendering: pixelated;
+    border: 1px solid var(--line); background: #fdf7ea; cursor: pointer; }
+  .row canvas.sel { outline: 3px solid var(--red); }
+  .strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; min-height: 100px; }
+  .strip canvas { width: 96px; height: 96px; image-rendering: pixelated;
+    border: 1px solid var(--line); background: #fdf7ea; }
+  .plabel { font-size: 15px; color: #6b5a3f; margin-top: 8px; font-style: italic; }
+  #status { font-size: 15px; color: #6b5a3f; border-top: 1px solid var(--line);
+    margin-top: 30px; padding-top: 8px; }
+  .hint { font-size: 15px; color: #6b5a3f; font-style: italic; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="wrap">
+  <h1>THE PARTS CABINET</h1>
+  <div class="sub">specimen garden · stage 1 — tenniel parts, dreamed by a small machine</div>
+  <a href="index.html" style="display:inline-block; margin:6px 0 14px; padding:3px 12px;
+   border:1px solid #b9a77f; color:#6b5a3f; font-size:15px; text-decoration:none;">← RETURN TO THE GARDEN</a>
+  <div id="boot"></div>
+  <div class="hint">click two tiles of the same part to walk between them — the in-between is also dreamed.</div>
+  <div id="cabinet"></div>
+  <div id="status"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4/dist/tf.min.js"></script>
+<script>
+'use strict';
+function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+const SEED=(Date.now()^(Math.random()*1e9))>>>0, R=mulberry32(SEED);
+function randnR(rng,n){const a=new Float32Array(n);for(let i=0;i<n;i+=2){const u=Math.max(rng(),1e-9),v=rng(),m=Math.sqrt(-2*Math.log(u));a[i]=m*Math.cos(6.2831853*v);if(i+1<n)a[i+1]=m*Math.sin(6.2831853*v);}return a;}
+const randn=n=>randnR(R,n);
+
+const PARTS=['heads','bodies','limbs'], POOL=8, TICK_MS=600, DRIFT=.3, TILE=64, STRIP=13;
+const bootEl=document.getElementById('boot'), cab=document.getElementById('cabinet'),
+      statusEl=document.getElementById('status');
+const engines={}, selA={}, selB={}; let dreams=0, tickIdx=0;
+function bootLine(t){ bootEl.textContent += t + '\n'; }
+
+function dreamBatch(eng, zs){                     // zs: array of Float32Array
+  const out=tf.tidy(()=>eng.model.predict(tf.tensor2d(Array.from(zs,x=>Array.from(x)),
+    [zs.length,eng.LATENT])));
+  const s=out.shape, stride=s.length===2?s[1]:s[1]*s[2], data=out.dataSync();
+  tf.dispose(out);
+  return data.subarray ? Array.from({length:zs.length},(_,i)=>data.slice(i*stride,(i+1)*stride)) : [];
+}
+function tileToInk(f, eng){                       // white → paper, black → ink
+  const c=document.createElement('canvas'); c.width=TILE; c.height=TILE;
+  const ctx=c.getContext('2d'), img=ctx.createImageData(TILE,TILE);
+  for(let p=0;p<f.length;p++){
+    let vn=eng.mapV(f[p]); vn=Math.max(0,Math.min(1,vn));
+    img.data[p*4]=36; img.data[p*4+1]=26; img.data[p*4+2]=18;
+    img.data[p*4+3]=Math.round((1-vn)*255);
+  }
+  ctx.putImageData(img,0,0); return c;
+}
+function drawSlot(canvas, eng, z){
+  const t=dreamBatch(eng,[z])[0];
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,TILE,TILE); ctx.drawImage(tileToInk(t,eng),0,0);
+  dreams++;
+}
+async function loadPart(part){
+  bootLine('LOADING ' + part.toUpperCase() + ' ... model/' + part + '/model.json');
+  const model=await tf.loadLayersModel('model/'+part+'/model.json');
+  const LATENT=model.inputs[0].shape[model.inputs[0].shape.length-1]||128;
+  const eng={model,LATENT,mapV:v=>v,poolZ:[],slots:[]};
+  const probe=dreamBatch(eng,[randn(LATENT)])[0];
+  let mn=Infinity,mx=-Infinity;
+  for(const v of probe){ if(v<mn)mn=v; if(v>mx)mx=v; }
+  eng.mapV=mn<-0.5?v=>(v+1)/2:v=>v;              // tanh (GAN) or sigmoid (VAE) — auto-detected
+  bootLine('  LATENT ' + LATENT + ' · ' + model.countParams().toLocaleString() +
+    ' PARAMS · RANGE ' + mn.toFixed(2) + ' … ' + mx.toFixed(2));
+  engines[part]=eng; return eng;
+}
+function buildRow(part){
+  const eng=engines[part];
+  const sec=document.createElement('section'); sec.className='part';
+  const h=document.createElement('h2');
+  h.innerHTML='<span>[ ' + part.toUpperCase() + ' ]</span><span class="newbtn" id="new-'+part+'">new dreams</span>';
+  const row=document.createElement('div'); row.className='row'; row.id='row-'+part;
+  const strip=document.createElement('div'); strip.className='strip'; strip.id='strip-'+part;
+  const lab=document.createElement('div'); lab.className='plabel'; lab.id='lab-'+part;
+  sec.append(h,row,strip,lab); cab.appendChild(sec);
+  document.getElementById('new-'+part).onclick=()=>dreamPool(part,true);
+  for(let k=0;k<POOL;k++){
+    const cv=document.createElement('canvas'); cv.width=TILE; cv.height=TILE; cv.dataset.k=k;
+    row.appendChild(cv); eng.slots.push(cv); eng.poolZ.push(null);
+    cv.onclick=()=>selectTile(part,k);
+  }
+  dreamPool(part,true);
+}
+function dreamPool(part, fresh){
+  const eng=engines[part];
+  for(let k=0;k<POOL;k++){
+    if(fresh||!eng.poolZ[k]) eng.poolZ[k]=randn(eng.LATENT);
+    drawSlot(eng.slots[k],eng,eng.poolZ[k]);
+  }
+}
+function selectTile(part,k){
+  const eng=engines[part];
+  if(selA[part]===undefined){ selA[part]=k; eng.slots[k].classList.add('sel'); return; }
+  if(selA[part]===k){ eng.slots[k].classList.remove('sel'); delete selA[part]; return; }
+  selB[part]=k; buildStrip(part,selA[part],k);
+  eng.slots[selA[part]].classList.remove('sel'); delete selA[part];
+}
+function buildStrip(part,ka,kb){
+  const eng=engines[part], strip=document.getElementById('strip-'+part);
+  strip.innerHTML='';
+  const za=eng.poolZ[ka], zb=eng.poolZ[kb], zs=[];
+  for(let i=0;i<STRIP;i++){
+    const t=i/(STRIP-1), z=new Float32Array(eng.LATENT);
+    for(let j=0;j<eng.LATENT;j++) z[j]=za[j]*(1-t)+zb[j]*t;
+    zs.push(z);
+  }
+  const tiles=dreamBatch(eng,zs);
+  tiles.forEach((f,i)=>{ const cv=document.createElement('canvas');
+    cv.width=TILE; cv.height=TILE; cv.getContext('2d').drawImage(tileToInk(f,eng),0,0);
+    strip.appendChild(cv); dreams++; });
+  document.getElementById('lab-'+part).textContent=
+    'walking ' + part.slice(0,-1) + ' #' + (ka+1) + ' → #' + (kb+1) +
+    ' — same pair, same walk, forever.';
+}
+function tick(){
+  const part=PARTS[tickIdx++%PARTS.length], eng=engines[part];
+  if(!eng) return;
+  const k=Math.floor(R()*POOL), fresh=randn(eng.LATENT), z=new Float32Array(eng.LATENT);
+  for(let j=0;j<eng.LATENT;j++) z[j]=eng.poolZ[k][j]*(1-DRIFT)+fresh[j]*DRIFT;
+  eng.poolZ[k]=z; drawSlot(eng.slots[k],eng,z);
+  statusEl.textContent='SESSION ' + SEED.toString(16) + ' · DREAMS ' + dreams.toLocaleString() +
+    ' · RE-DREAM EVERY ' + TICK_MS + 'MS · NOTHING CORRECTED';
+}
+(async function boot(){
+  bootLine('THE PARTS CABINET — THE SPECIMEN GARDEN · STAGE 1');
+  bootLine('EVERY PART DREAMED AT 64×64 FROM TENNIEL, 1865. (LAW 8)');
+  try{
+    for(const part of PARTS) await loadPart(part);
+  }catch(err){
+    bootLine('LOAD FAILED: ' + (err && err.message ? err.message : err));
+    bootLine('CHECK: run a local server (python -m http.server 8000), confirm model/' +
+      'heads|bodies|limbs each contain model.json + shard files.');
+    return;
+  }
+  bootEl.style.display='none';
+  for(const part of PARTS) buildRow(part);
+  setInterval(tick,TICK_MS);
+})();
+</script>
+</body>
+</html>
